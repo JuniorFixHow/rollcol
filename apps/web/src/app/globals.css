@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+/* Calm, neutral palette with one accent. Tokens are used through Tailwind as
+   bg-surface, text-muted, border-line, bg-accent and so on. */
+:root {
+  --background: #f7f8fa;
+  --surface: #ffffff;
+  --surface-muted: #f1f3f6;
+  --foreground: #1b2430;
+  --muted: #5b6676;
+  --line: #e2e6ec;
+  --accent: #0f6b62;
+  --accent-hover: #0c5a52;
+  --accent-soft: #e5f2f0;
+  --accent-foreground: #ffffff;
+  --danger: #b42318;
+  --danger-soft: #fdecea;
+  --warning: #8a5a00;
+  --warning-soft: #fff4dc;
+  --success: #1f7a3f;
+  --success-soft: #e6f4ea;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f141a;
+    --surface: #161d25;
+    --surface-muted: #1d2630;
+    --foreground: #e7ebf0;
+    --muted: #9aa5b4;
+    --line: #2a3542;
+    --accent: #3fb3a5;
+    --accent-hover: #5cc4b7;
+    --accent-soft: #15302d;
+    --accent-foreground: #0b1a18;
+    --danger: #f97066;
+    --danger-soft: #3a1714;
+    --warning: #f5c04a;
+    --warning-soft: #33280f;
+    --success: #5fcf88;
+    --success-soft: #13301e;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}

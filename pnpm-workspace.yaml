@@ -1,0 +1,20 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+# Expo and React Native need a flat node_modules layout (also set in .npmrc).
+nodeLinker: hoisted
+# Exact versions already in pnpm-lock.yaml that were less than a day old when
+# installed. Safe to remove once they pass the minimum release age.
+minimumReleaseAgeExclude:
+  - "@supabase/supabase-js@2.119.2"
+  - "@supabase/auth-js@2.119.2"
+  - "@supabase/functions-js@2.119.2"
+  - "@supabase/postgrest-js@2.119.2"
+  - "@supabase/realtime-js@2.119.2"
+  - "@supabase/storage-js@2.119.2"
+  - "electron-to-chromium@1.5.491"
+  - "jose@6.2.18"
+  - "libphonenumber-js@1.13.17"
+  - "object-inspect@1.14.0"
+  - "source-map-js@1.2.4"
+  - "tinybench@6.2.4"

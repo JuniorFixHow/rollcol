@@ -1,0 +1,20 @@
+{
+  "name": "rollcol",
+  "private": true,
+  "packageManager": "pnpm@12.21.0",
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:web": "pnpm --filter @rollcol/web dev",
+    "dev:mobile": "pnpm --filter @rollcol/mobile start",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "db:types": "supabase gen types typescript --linked --schema public > packages/shared/src/database.types.ts"
+  },
+  "devDependencies": {
+    "supabase": "^3.2.0",
+    "turbo": "^2.11.13",
+    "typescript": "~5.9.3"
+  }
+}
