@@ -171,6 +171,7 @@ export type Database = {
       }
       classes: {
         Row: {
+          periods_per_day: number | null
           archived_at: string | null
           class_teacher_id: string | null
           created_at: string
@@ -180,6 +181,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          periods_per_day?: number | null
           archived_at?: string | null
           class_teacher_id?: string | null
           created_at?: string
@@ -189,6 +191,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          periods_per_day?: number | null
           archived_at?: string | null
           class_teacher_id?: string | null
           created_at?: string
@@ -690,23 +693,167 @@ export type Database = {
           },
         ]
       }
+      register_entries: {
+        Row: {
+          mark: Database["public"]["Enums"]["attendance_mark"]
+          marked_at: string
+          marked_by: string | null
+          register_id: string
+          school_id: string
+          student_id: string
+        }
+        Insert: {
+          mark: Database["public"]["Enums"]["attendance_mark"]
+          marked_at?: string
+          marked_by?: string | null
+          register_id: string
+          school_id: string
+          student_id: string
+        }
+        Update: {
+          mark?: Database["public"]["Enums"]["attendance_mark"]
+          marked_at?: string
+          marked_by?: string | null
+          register_id?: string
+          school_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "register_entries_register_id_school_id_fkey"
+            columns: ["register_id", "school_id"]
+            isOneToOne: false
+            referencedRelation: "registers"
+            referencedColumns: ["id", "school_id"]
+          },
+          {
+            foreignKeyName: "register_entries_student_id_school_id_fkey"
+            columns: ["student_id", "school_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id", "school_id"]
+          },
+        ]
+      }
+      registers: {
+        Row: {
+          alerts_queued_at: string | null
+          academic_period_id: string | null
+          class_id: string
+          class_subject_id: string | null
+          closed_at: string | null
+          closes_at: string
+          id: string
+          opened_at: string
+          opened_by: string | null
+          period_number: number | null
+          register_date: string
+          reward_marks: number
+          school_id: string
+          status: Database["public"]["Enums"]["register_status"]
+          submitted_at: string | null
+          submitted_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          alerts_queued_at?: string | null
+          academic_period_id?: string | null
+          class_id: string
+          class_subject_id?: string | null
+          closed_at?: string | null
+          closes_at: string
+          id?: string
+          opened_at?: string
+          opened_by?: string | null
+          period_number?: number | null
+          register_date: string
+          reward_marks?: number
+          school_id: string
+          status?: Database["public"]["Enums"]["register_status"]
+          submitted_at?: string | null
+          submitted_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alerts_queued_at?: string | null
+          academic_period_id?: string | null
+          class_id?: string
+          class_subject_id?: string | null
+          closed_at?: string | null
+          closes_at?: string
+          id?: string
+          opened_at?: string
+          opened_by?: string | null
+          period_number?: number | null
+          register_date?: string
+          reward_marks?: number
+          school_id?: string
+          status?: Database["public"]["Enums"]["register_status"]
+          submitted_at?: string | null
+          submitted_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registers_class_id_school_id_fkey"
+            columns: ["class_id", "school_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id", "school_id"]
+          },
+          {
+            foreignKeyName: "registers_class_subject_id_school_id_fkey"
+            columns: ["class_subject_id", "school_id"]
+            isOneToOne: false
+            referencedRelation: "class_subjects"
+            referencedColumns: ["id", "school_id"]
+          },
+        ]
+      }
       school_settings: {
         Row: {
+          sms_quiet_end: string
+          sms_quiet_hours: boolean
+          sms_quiet_start: string
+          daily_register_closes_at: string
+          period_register_minutes: number
+          periods_per_day: number
           school_id: string
+          sms_absence_alerts: boolean
+          sms_name: string | null
+          sms_present_alerts: boolean
           student_approval_required: boolean
           student_self_signup: boolean
           updated_at: string
           updated_by: string | null
         }
         Insert: {
+          sms_quiet_end?: string
+          sms_quiet_hours?: boolean
+          sms_quiet_start?: string
+          daily_register_closes_at?: string
+          period_register_minutes?: number
+          periods_per_day?: number
           school_id: string
+          sms_absence_alerts?: boolean
+          sms_name?: string | null
+          sms_present_alerts?: boolean
           student_approval_required?: boolean
           student_self_signup?: boolean
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
+          sms_quiet_end?: string
+          sms_quiet_hours?: boolean
+          sms_quiet_start?: string
+          daily_register_closes_at?: string
+          period_register_minutes?: number
+          periods_per_day?: number
           school_id?: string
+          sms_absence_alerts?: boolean
+          sms_name?: string | null
+          sms_present_alerts?: boolean
           student_approval_required?: boolean
           student_self_signup?: boolean
           updated_at?: string
@@ -775,6 +922,187 @@ export type Database = {
           verified_by?: string | null
         }
         Relationships: []
+      }
+      sms_credit_entries: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: number
+          reason: string
+          school_id: string
+          sms_id: number | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          reason: string
+          school_id: string
+          sms_id?: number | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          reason?: string
+          school_id?: string
+          sms_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_credit_entries_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_credit_entries_sms_id_fkey"
+            columns: ["sms_id"]
+            isOneToOne: false
+            referencedRelation: "sms_outbox"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sms_messages: {
+        Row: {
+          audience: string
+          body: string
+          created_at: string
+          created_by: string | null
+          id: number
+          kind: Database["public"]["Enums"]["sms_kind"]
+          recipients: number
+          school_id: string
+          student_id: string | null
+        }
+        Insert: {
+          audience: string
+          body: string
+          created_at?: string
+          created_by?: string | null
+          kind: Database["public"]["Enums"]["sms_kind"]
+          recipients?: number
+          school_id: string
+          student_id?: string | null
+        }
+        Update: {
+          audience?: string
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          kind?: Database["public"]["Enums"]["sms_kind"]
+          recipients?: number
+          school_id?: string
+          student_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_messages_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_messages_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sms_outbox: {
+        Row: {
+          delivered_at: string | null
+          delivery: Database["public"]["Enums"]["sms_delivery"] | null
+          attempts: number
+          body: string
+          created_at: string
+          created_by: string | null
+          credits: number
+          error: string | null
+          guardian_id: string | null
+          id: number
+          kind: Database["public"]["Enums"]["sms_kind"]
+          message_id: number | null
+          provider_id: string | null
+          school_id: string
+          segments: number
+          send_after: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["sms_status"]
+          to_phone: string
+          updated_at: string
+        }
+        Insert: {
+          delivered_at?: string | null
+          delivery?: Database["public"]["Enums"]["sms_delivery"] | null
+          attempts?: number
+          body: string
+          created_at?: string
+          created_by?: string | null
+          credits?: number
+          error?: string | null
+          guardian_id?: string | null
+          kind: Database["public"]["Enums"]["sms_kind"]
+          message_id?: number | null
+          provider_id?: string | null
+          school_id: string
+          segments: number
+          send_after?: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["sms_status"]
+          to_phone: string
+          updated_at?: string
+        }
+        Update: {
+          delivered_at?: string | null
+          delivery?: Database["public"]["Enums"]["sms_delivery"] | null
+          attempts?: number
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          credits?: number
+          error?: string | null
+          guardian_id?: string | null
+          kind?: Database["public"]["Enums"]["sms_kind"]
+          message_id?: number | null
+          provider_id?: string | null
+          school_id?: string
+          segments?: number
+          send_after?: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["sms_status"]
+          to_phone?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_outbox_guardian_id_fkey"
+            columns: ["guardian_id"]
+            isOneToOne: false
+            referencedRelation: "guardians"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_outbox_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "sms_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_outbox_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       staff: {
         Row: {
@@ -946,9 +1274,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      account_deletion_effect: {
+      account_deletion_effects: {
         Args: never
-        Returns: string
+        Returns: {
+          school_id: string
+          school_name: string
+          effect: string
+        }[]
       }
       add_guardian_to_student: {
         Args: {
@@ -958,6 +1290,26 @@ export type Database = {
           p_relationship?: string
         }
         Returns: string
+      }
+      broadcast_preview: {
+        Args: { p_school_id: string; p_body: string; p_class_ids?: string[] | null }
+        Returns: { recipients: number; segments: number; credits: number; balance: number }[]
+      }
+      class_attendance_summary: {
+        Args: {
+          p_class_id: string
+          p_academic_period_id?: string
+        }
+        Returns: {
+          student_id: string
+          full_name: string
+          school_number: string | null
+          present: number
+          late: number
+          absent: number
+          registers: number
+          marks: number
+        }[]
       }
       create_school: {
         Args: {
@@ -973,23 +1325,27 @@ export type Database = {
           school_code: string
         }[]
       }
-      current_member: {
-        Args: never
+      find_user_id_by_email: {
+        Args: {
+          p_email: string
+        }
+        Returns: string
+      }
+      grant_sms_credits: {
+        Args: { p_school_id: string; p_amount: number; p_reason: string }
+        Returns: number
+      }
+      guardians_not_reached: {
+        Args: { p_student_id: string }
         Returns: {
-          kind: string
-          member_id: string
-          status: Database["public"]["Enums"]["member_status"]
-          role: Database["public"]["Enums"]["staff_role"]
-          full_name: string
-          school_number: string
-          school_id: string
-          school_name: string
-          school_code: string
-          school_type: Database["public"]["Enums"]["school_type"]
-          register_mode: Database["public"]["Enums"]["register_mode"]
-          school_status: Database["public"]["Enums"]["school_status"]
-          is_platform_admin: boolean
+          guardian_id: string
+          delivery: Database["public"]["Enums"]["sms_delivery"]
+          reported_at: string
         }[]
+      }
+      is_platform_admin: {
+        Args: never
+        Returns: boolean
       }
       join_course_run: {
         Args: {
@@ -1005,6 +1361,50 @@ export type Database = {
         }
         Returns: Database["public"]["Enums"]["member_status"]
       }
+      membership_count: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: number
+      }
+      my_memberships: {
+        Args: never
+        Returns: {
+          kind: string
+          member_id: string
+          status: Database["public"]["Enums"]["member_status"]
+          role: Database["public"]["Enums"]["staff_role"]
+          full_name: string
+          school_number: string
+          school_id: string
+          school_name: string
+          school_code: string
+          school_type: Database["public"]["Enums"]["school_type"]
+          register_mode: Database["public"]["Enums"]["register_mode"]
+          school_status: Database["public"]["Enums"]["school_status"]
+        }[]
+      }
+      open_register: {
+        Args: {
+          p_id: string
+          p_class_id: string
+          p_class_subject_id?: string
+          p_period_number?: number
+          p_reward_marks?: number
+        }
+        Returns: Database["public"]["Tables"]["registers"]["Row"]
+      }
+      platform_sms_sender_log: {
+        Args: never
+        Returns: {
+          replied_at: string | null
+          status_code: number | null
+          reply: string | null
+          error: string | null
+          configured: boolean
+          waiting: number
+        }[]
+      }
       platform_schools: {
         Args: never
         Returns: {
@@ -1019,7 +1419,38 @@ export type Database = {
           verified_at: string
           student_count: number
           staff_count: number
+          sms_credits: number
+          sms_sent_30_days: number
         }[]
+      }
+      registers_today: {
+        Args: {
+          p_school_id: string
+        }
+        Returns: {
+          class_id: string
+          class_name: string
+          class_subject_id: string | null
+          subject_name: string | null
+          register_id: string | null
+          period_number: number | null
+          status: Database["public"]["Enums"]["register_status"] | null
+          closes_at: string | null
+          marked_count: number
+          student_count: number
+          periods_per_day: number
+        }[]
+      }
+      record_sms_delivery: {
+        Args: { p_provider_id: string; p_delivery: Database["public"]["Enums"]["sms_delivery"] }
+        Returns: boolean
+      }
+      save_register_marks: {
+        Args: {
+          p_register_id: string
+          p_marks: Json
+        }
+        Returns: number
       }
       school_by_code: {
         Args: {
@@ -1030,6 +1461,14 @@ export type Database = {
           type: Database["public"]["Enums"]["school_type"]
           accepts_students: boolean
         }[]
+      }
+      send_broadcast: {
+        Args: { p_school_id: string; p_body: string; p_class_ids?: string[] | null }
+        Returns: number
+      }
+      send_student_message: {
+        Args: { p_student_id: string; p_body: string }
+        Returns: number
       }
       set_present_alert_guardian: {
         Args: {
@@ -1045,6 +1484,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      sms_credit_balance: {
+        Args: { p_school_id: string }
+        Returns: number
+      }
+      submit_register: {
+        Args: {
+          p_register_id: string
+        }
+        Returns: Database["public"]["Tables"]["registers"]["Row"]
+      }
       sign_in_email: {
         Args: {
           p_school_code: string
@@ -1058,6 +1507,10 @@ export type Database = {
       academic_period_kind:
         | "term"
         | "semester"
+      attendance_mark:
+        | "present"
+        | "late"
+        | "absent"
       enrolment_status:
         | "active"
         | "removed"
@@ -1077,10 +1530,32 @@ export type Database = {
       register_mode:
         | "daily"
         | "per_period"
+      register_status:
+        | "open"
+        | "submitted"
+        | "closed"
       school_status:
         | "unverified"
         | "verified"
         | "suspended"
+      sms_delivery:
+        | "pending"
+        | "delivered"
+        | "failed"
+        | "expired"
+        | "rejected"
+      sms_kind:
+        | "attendance"
+        | "system"
+        | "broadcast"
+        | "custom"
+      sms_status:
+        | "queued"
+        | "sending"
+        | "sent"
+        | "failed"
+        | "no_credit"
+        | "cancelled"
       school_type:
         | "tertiary"
         | "non_tertiary"
@@ -1198,13 +1673,18 @@ export const Constants = {
   public: {
     Enums: {
       academic_period_kind: ["term", "semester"],
+      attendance_mark: ["present", "late", "absent"],
       enrolment_status: ["active", "removed"],
       guardian_event_kind: ["guardian_added", "guardian_removed", "phone_changed", "alerts_on", "alerts_off"],
       member_status: ["pending", "active", "disabled"],
       record_source: ["rollcol", "stediis"],
       register_mode: ["daily", "per_period"],
+      register_status: ["open", "submitted", "closed"],
       school_status: ["unverified", "verified", "suspended"],
       school_type: ["tertiary", "non_tertiary"],
+      sms_delivery: ["pending", "delivered", "failed", "expired", "rejected"],
+      sms_kind: ["attendance", "system", "broadcast", "custom"],
+      sms_status: ["queued", "sending", "sent", "failed", "no_credit", "cancelled"],
       staff_role: ["admin", "teacher"],
     },
   },

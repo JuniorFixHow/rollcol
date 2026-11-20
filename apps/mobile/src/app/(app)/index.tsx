@@ -1,22 +1,33 @@
 import { periodWord, staffRoleLabel } from "@rollcol/shared";
-import { Link } from "expo-router";
-import { useState } from "react";
+import { Link, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { usePalette } from "@/components/theme";
 import { Body, Card, Message, Title } from "@/components/ui";
+import { TodayRegisters } from "@/components/today-registers";
+import { syncOutbox } from "@/lib/registers";
 import { useSession } from "@/lib/session";
 
 export default function HomeScreen() {
-  const { member, refresh } = useSession();
+  const { member, memberships, refresh } = useSession();
   const palette = usePalette();
   const [refreshing, setRefreshing] = useState(false);
+  // Bumped on pull-to-refresh and when returning to this screen, so lists reload.
+  const [refreshKey, setRefreshKey] = useState(0);
+  useFocusEffect(
+    useCallback(() => {
+      setRefreshKey((key) => key + 1);
+    }, []),
+  );
 
   if (!member || member.kind === "none") return null;
   const { school } = member;
 
   async function onRefresh() {
     setRefreshing(true);
+    await syncOutbox();
     await refresh();
+    setRefreshKey((key) => key + 1);
     setRefreshing(false);
   }
 
@@ -62,13 +73,16 @@ export default function HomeScreen() {
             </>
           ) : (
             <>
-              <Text style={[styles.cardTitle, { color: palette.text }]}>Registers</Text>
-              <Body muted>Marking registers for your classes arrives in the next update.</Body>
+              <Text style={[styles.cardTitle, { color: palette.text }]}>Today&apos;s registers</Text>
+              <TodayRegisters schoolId={school.id} perPeriod={school.registerMode === "per_period"} refreshKey={refreshKey} />
             </>
           )}
         </Card>
       ) : null}
 
+      <Link href="/schools" style={[styles.link, { color: palette.accent }]}>
+        {memberships.length > 1 ? `Switch school (${memberships.length} schools)` : "Your schools"}
+      </Link>
       <Link href="/account" style={[styles.link, { color: palette.accent }]}>
         Your account
       </Link>

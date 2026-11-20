@@ -30,7 +30,11 @@ export async function updateClass(classId: string, _: FormState, formData: FormD
 
   const { error } = await supabase
     .from("classes")
-    .update({ name: parsed.data.name, class_teacher_id: parsed.data.classTeacherId })
+    .update({
+      name: parsed.data.name,
+      class_teacher_id: parsed.data.classTeacherId,
+      ...(parsed.data.periodsPerDay !== undefined ? { periods_per_day: parsed.data.periodsPerDay } : {}),
+    })
     .eq("id", classId)
     .eq("school_id", member.school.id);
   if (error) return failed(error, values);

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ActionForm, FormMessage, InlineAction, SelectField, SubmitButton, TextField } from "@/components/form";
+import { ActionForm, FieldButton, FormMessage, InlineAction, SelectField, SubmitButton, TextField } from "@/components/form";
 import { Card, EmptyState, PageHeader, Table, Td } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
 import { listTeachers, visibleClassIds } from "@/lib/queries";
@@ -91,18 +91,20 @@ export default async function ClassesPage() {
                         hidden={{ subjectId: subject.id }}
                         label="Remove"
                         variant="ghost"
-                        confirm={`Remove ${subject.name} from every class?`}
+                        confirm={`Remove ${subject.name}? It is removed from every class, and its period registers are deleted with it. Registers of other subjects are not affected.`}
                       />
                     </li>
                   ))}
                 </ul>
               ) : null}
               <ActionForm action={createSubject} resetOnSuccess className="space-y-3">
-                <div className="flex items-end gap-3">
+                <div className="flex items-start gap-3">
                   <div className="flex-1">
                     <TextField name="name" label="New subject" placeholder="Integrated Science" />
                   </div>
-                  <SubmitButton>Add</SubmitButton>
+                  <FieldButton always>
+                    <SubmitButton>Add</SubmitButton>
+                  </FieldButton>
                 </div>
                 <FormMessage />
               </ActionForm>

@@ -1,8 +1,9 @@
 import { APPLE_STANDARD_EULA_URL } from "@rollcol/shared";
 import * as WebBrowser from "expo-web-browser";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -14,8 +15,25 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import LOGO_DARK from "@/assets/images/logo-mark-dark.png";
+import LOGO_LIGHT from "@/assets/images/logo-mark.png";
 import { WEB_URL } from "@/lib/supabase";
 import { usePalette } from "./theme";
+
+
+/** The RollCol mark, in the version that suits the current theme. */
+export function Logo({ size = 56 }: { size?: number }) {
+  const palette = usePalette();
+  return (
+    <Image
+      source={palette.scheme === "dark" ? LOGO_DARK : LOGO_LIGHT}
+      style={{ width: size, height: size }}
+      accessibilityIgnoresInvertColors
+      accessible={false}
+    />
+  );
+}
 
 export function Screen({ children, scroll = true }: { children: ReactNode; scroll?: boolean }) {
   const palette = usePalette();
@@ -54,22 +72,44 @@ export function Field({
   label,
   hint,
   error,
+  secureTextEntry,
   ...input
 }: TextInputProps & { label: string; hint?: string; error?: string }) {
   const palette = usePalette();
+  // Password fields get an eye button to show or hide what was typed.
+  const [revealed, setRevealed] = useState(false);
+  const isPassword = secureTextEntry === true;
+
   return (
     <View style={styles.field}>
       <Text style={[styles.label, { color: palette.text }]}>{label}</Text>
       {hint ? <Text style={[styles.hint, { color: palette.muted }]}>{hint}</Text> : null}
-      <TextInput
-        placeholderTextColor={palette.muted}
-        accessibilityLabel={label}
-        style={[
-          styles.input,
-          { backgroundColor: palette.surface, borderColor: error ? palette.danger : palette.line, color: palette.text },
-        ]}
-        {...input}
-      />
+      <View>
+        <TextInput
+          placeholderTextColor={palette.muted}
+          accessibilityLabel={label}
+          secureTextEntry={isPassword && !revealed}
+          autoCapitalize={isPassword ? "none" : input.autoCapitalize}
+          autoCorrect={isPassword ? false : input.autoCorrect}
+          style={[
+            styles.input,
+            isPassword ? styles.inputWithButton : null,
+            { backgroundColor: palette.surface, borderColor: error ? palette.danger : palette.line, color: palette.text },
+          ]}
+          {...input}
+        />
+        {isPassword ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={revealed ? "Hide password" : "Show password"}
+            hitSlop={8}
+            onPress={() => setRevealed((value) => !value)}
+            style={styles.eye}
+          >
+            <Ionicons name={revealed ? "eye-off-outline" : "eye-outline"} size={22} color={palette.muted} />
+          </Pressable>
+        ) : null}
+      </View>
       {error ? <Text style={[styles.hint, { color: palette.danger }]}>{error}</Text> : null}
     </View>
   );
@@ -173,6 +213,8 @@ const styles = StyleSheet.create({
   field: { gap: 4 },
   label: { fontSize: 14, fontWeight: "600" },
   hint: { fontSize: 13 },
+  inputWithButton: { paddingRight: 48 },
+  eye: { position: "absolute", right: 0, top: 0, bottom: 0, width: 48, alignItems: "center", justifyContent: "center" },
   input: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 12, fontSize: 16 },
   button: { minHeight: 48, borderRadius: 8, borderWidth: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 16 },
   linkButton: { minHeight: 40, alignItems: "center", justifyContent: "center" },

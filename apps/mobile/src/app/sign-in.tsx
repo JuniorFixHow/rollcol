@@ -5,7 +5,8 @@ import * as WebBrowser from "expo-web-browser";
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { usePalette } from "@/components/theme";
-import { Body, Button, Field, LegalLinks, Message, Screen, Title } from "@/components/ui";
+import { Body, Button, Field, LegalLinks, Message, Screen, Title, Logo } from "@/components/ui";
+import { setSignInSchoolCode } from "@/lib/session";
 import { WEB_URL, supabase } from "@/lib/supabase";
 
 const LAST_SCHOOL_CODE = "rollcol.lastSchoolCode";
@@ -75,6 +76,7 @@ export default function SignInScreen() {
         signInEmail = parsed.data.email;
       }
 
+      await setSignInSchoolCode(method === "school" ? schoolCode.replace(/\s/g, "").toUpperCase() : null);
       const { error: authError } = await supabase.auth.signInWithPassword({ email: signInEmail, password });
       if (authError) {
         if (authError.code === "email_not_confirmed") setError("Confirm your email first. Open the link we sent you, then sign in.");
@@ -90,6 +92,7 @@ export default function SignInScreen() {
   return (
     <Screen>
       <View style={styles.header}>
+        <Logo />
         <Title>Sign in to RollCol</Title>
         <Body muted>For students, teachers and lecturers.</Body>
       </View>

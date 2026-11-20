@@ -1,24 +1,49 @@
-import { type Member, toMember } from "@rollcol/shared";
+import { type Member, type Membership, type StaffMembership, chooseMember, toMemberships } from "@rollcol/shared";
+import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 
-export type StaffMember = Extract<Member, { kind: "staff" }>;
+export type StaffMember = StaffMembership;
+
+/** Remembers which school's dashboard a person last opened. */
+export const ACTIVE_SCHOOL_COOKIE = "rollcol_school";
 
 /**
  * The data access layer for identity. Every page and Server Action starts here.
  * Cached per request, so layouts and pages share one lookup.
+ *
+ * A person can belong to several schools. `memberships` lists them all;
+ * `member` is the one on screen (chosen with the school switcher).
  */
 export const getSession = cache(async () => {
+  // Who is signed in is only known at request time. Stop prerendering here, so
+  // Next.js does not try to prepare signed-in pages in advance (Supabase reads
+  // the clock to check the session's expiry).
+  await connection();
   const supabase = await createClient();
   const { data: claimsData } = await supabase.auth.getClaims();
   const userId = claimsData?.claims?.sub;
   if (!userId) return null;
 
-  const { data, error } = await supabase.rpc("current_member");
-  if (error) throw new Error(`Could not load the signed-in account: ${error.message}`);
+  const [membershipsResult, adminResult, cookieStore] = await Promise.all([
+    supabase.rpc("my_memberships"),
+    supabase.rpc("is_platform_admin"),
+    cookies(),
+  ]);
+  if (membershipsResult.error) {
+    throw new Error(`Could not load the signed-in account: ${membershipsResult.error.message}`);
+  }
 
-  return { supabase, userId, member: toMember(data[0]) };
+  const isPlatformAdmin = adminResult.data === true;
+  const memberships = toMemberships(membershipsResult.data, isPlatformAdmin);
+  const member = chooseMember(memberships, isPlatformAdmin, {
+    preferredSchoolId: cookieStore.get(ACTIVE_SCHOOL_COOKIE)?.value ?? null,
+    preferKind: "staff",
+  });
+
+  return { supabase, userId, memberships, member };
 });
 
 /** A signed-in user, with or without a school. */
@@ -48,6 +73,11 @@ export async function requirePlatformAdmin() {
   const session = await requireUser();
   if (!session.member.isPlatformAdmin) redirect("/dashboard");
   return session;
+}
+
+/** Schools whose dashboard this person can open on the web. */
+export function staffMemberships(memberships: readonly Membership[]): StaffMembership[] {
+  return memberships.filter((m): m is StaffMembership => m.kind === "staff");
 }
 
 /** Where a user should land after signing in. */

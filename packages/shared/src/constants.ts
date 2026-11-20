@@ -61,7 +61,7 @@ export const TIMEZONE = "Africa/Accra";
  * (private.unverified_limit in supabase/migrations); keep the two in sync.
  */
 export const UNVERIFIED_SCHOOL_LIMITS = {
-  students: 100,
+  students: 10,
   staff: 10,
 } as const;
 
@@ -71,7 +71,7 @@ export const SIGN_IN_LOCK = { maxFailures: 10, windowMinutes: 15 } as const;
 export const PASSWORD_MIN_LENGTH = 8;
 
 /** Placeholder until launch (build plan step 9). */
-export const SUPPORT_EMAIL = "support@rollcol.app";
+export const SUPPORT_EMAIL = "support@rollcol.com";
 
 /** Apple's standard EULA is the Terms of Use on iOS. */
 export const APPLE_STANDARD_EULA_URL =

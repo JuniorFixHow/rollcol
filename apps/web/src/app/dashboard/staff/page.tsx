@@ -1,17 +1,31 @@
 import { staffRoleLabel } from "@rollcol/shared";
 import type { Metadata } from "next";
-import { ActionForm, FormMessage, InlineAction, SelectField, SubmitButton, TextField } from "@/components/form";
-import { Badge, Card, EmptyState, PageHeader, Table, Td, formatDate } from "@/components/ui";
+import { ActionForm, FieldButton, FormMessage, InlineAction, SelectField, SubmitButton, TextField } from "@/components/form";
+import { Badge, Card, EmptyState, PageHeader, Table, Td, formatDateTime } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth";
 import { grantDelegation, inviteStaff, removeStaff, revokeDelegation, updateStaff } from "./actions";
 
 export const metadata: Metadata = { title: "Staff" };
+
+/** "2026-11-27T17:00" in Ghana time (UTC+0), for a datetime-local input. */
+function ghanaInputTime(date: Date): string {
+  return date.toISOString().slice(0, 16);
+}
+
+/** Earliest allowed end (10 minutes from now) and a default (a week from now at 17:00). */
+function delegationTimes(): { min: string; suggested: string } {
+  const now = Date.now();
+  const suggested = new Date(now + 7 * 24 * 60 * 60 * 1000);
+  suggested.setUTCHours(17, 0, 0, 0);
+  return { min: ghanaInputTime(new Date(now + 10 * 60 * 1000)), suggested: ghanaInputTime(suggested) };
+}
 
 export default async function StaffPage() {
   const { supabase, member } = await requireAdmin();
   const { school } = member;
   const tertiary = school.type === "tertiary";
   const teacherWord = tertiary ? "lecturer" : "teacher";
+  const times = delegationTimes();
 
   const [{ data: staff, error }, { data: delegations }] = await Promise.all([
     supabase
@@ -68,18 +82,29 @@ export default async function StaffPage() {
                         action={updateStaff}
                         hidden={{ staffId: person.id, change: person.role === "admin" ? "make_teacher" : "make_admin" }}
                         label={person.role === "admin" ? `Make ${teacherWord}` : "Make admin"}
+                        confirm={
+                          person.role === "admin"
+                            ? `Make ${person.full_name} a ${teacherWord}? They will no longer manage staff, ${tertiary ? "courses" : "classes"}, students, guardians or settings. They keep their ${tertiary ? "courses" : "classes and subjects"}. A school always needs at least one admin.`
+                            : `Make ${person.full_name} an admin? Admins manage staff, ${tertiary ? "courses" : "classes"}, students, guardians and settings, see every ${tertiary ? "session" : "register"}, and can correct any of them.`
+                        }
                       />
                       <InlineAction
                         action={updateStaff}
                         hidden={{ staffId: person.id, change: disabled ? "enable" : "disable" }}
                         label={disabled ? "Turn on" : "Turn off"}
+                        variant={disabled ? "secondary" : "danger"}
+                        confirm={
+                          disabled
+                            ? `Turn ${person.full_name} back on? They can open ${school.name} again with their usual sign-in details, and pick up their ${tertiary ? "courses" : "classes and subjects"} where they left off.`
+                            : `Turn off ${person.full_name}? They can no longer open ${school.name} on the website or in the app, or take ${tertiary ? "check-in sessions" : "registers"}. Their past ${tertiary ? "sessions" : "registers"} and marks stay, and they stay assigned to their ${tertiary ? "courses" : "classes and subjects"}, so assign someone else if needed. Their account and any other schools are not affected. You can turn them back on at any time.`
+                        }
                       />
                       <InlineAction
                         action={removeStaff}
                         hidden={{ staffId: person.id }}
                         label="Remove"
                         variant="ghost"
-                        confirm={`Remove ${person.full_name}? Their RollCol account will be deleted. Records they made stay.`}
+                        confirm={`Remove ${person.full_name}? They lose access to this school. Records they made stay, and their RollCol account stays if they belong to another school.`}
                       />
                     </div>
                   )}
@@ -133,23 +158,37 @@ export default async function StaffPage() {
                           <li key={teacher.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
                             <span>
                               <span className="font-medium">{teacher.full_name}</span>
-                              <span className="text-muted"> until {formatDate(delegation.expires_at)}</span>
+                              <span className="text-muted"> until {formatDateTime(delegation.expires_at)}</span>
                             </span>
-                            <InlineAction action={revokeDelegation} hidden={{ delegationId: delegation.id }} label="Stop" />
+                            <InlineAction
+                              action={revokeDelegation}
+                              hidden={{ delegationId: delegation.id }}
+                              label="Stop"
+                              confirm={`Stop ${teacher.full_name} managing guardians? They can no longer add or remove guardians or change SMS settings. Guardians they already added stay.`}
+                            />
                           </li>
                         );
                       })}
                   </ul>
                 ) : null}
-                <ActionForm action={grantDelegation} resetOnSuccess className="grid items-end gap-4 sm:grid-cols-[1fr_12rem_auto]">
+                <ActionForm action={grantDelegation} resetOnSuccess className="grid items-start gap-4 sm:grid-cols-[1fr_15rem_auto]">
                   <SelectField
                     name="staffId"
                     label="Teacher"
                     placeholder="Choose a teacher"
                     options={teachers.map((teacher) => ({ value: teacher.id, label: teacher.full_name }))}
                   />
-                  <TextField name="expiresOn" label="Until" type="date" />
-                  <SubmitButton>Allow</SubmitButton>
+                  <TextField
+                    name="expiresAt"
+                    label="Until"
+                    type="datetime-local"
+                    min={times.min}
+                    defaultValue={times.suggested}
+                    hint="Ghana time. Their permission ends at this time."
+                  />
+                  <FieldButton>
+                    <SubmitButton>Allow</SubmitButton>
+                  </FieldButton>
                   <div className="sm:col-span-3">
                     <FormMessage />
                   </div>

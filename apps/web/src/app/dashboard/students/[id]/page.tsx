@@ -1,11 +1,13 @@
-import { SMS_POLICY, formatPhoneForDisplay } from "@rollcol/shared";
+import { SMS_POLICY, formatPhoneForDisplay, quietHoursText } from "@rollcol/shared";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ActionForm, FormMessage, InlineAction, SelectField, SubmitButton, TextField } from "@/components/form";
+import { ActionForm, FieldButton, FormMessage, InlineAction, SelectField, SubmitButton, TextField } from "@/components/form";
 import { Badge, Card, EmptyState, Notice, PageHeader } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
 import { visibleClassIds } from "@/lib/queries";
+import { sendStudentMessage } from "../../messages/actions";
+import { MessageComposer } from "../../messages/message-composer";
 import {
   addGuardian,
   deleteStudent,
@@ -36,7 +38,17 @@ export default async function StudentPage({ params }: PageProps<"/dashboard/stud
   const visible = tertiary ? "all" : await visibleClassIds(supabase, member);
   if (visible !== "all" && (!student.class_id || !visible.includes(student.class_id))) notFound();
 
-  const [{ data: links }, { data: delegation }, { data: classes }, { data: programmes }, { data: batches }] = await Promise.all([
+  const canMessage = !tertiary && school.status === "verified" && student.status === "active";
+  const [
+    { data: links },
+    { data: delegation },
+    { data: classes },
+    { data: programmes },
+    { data: batches },
+    { data: smsSettings },
+    balance,
+    { data: notReached },
+  ] = await Promise.all([
     tertiary
       ? Promise.resolve({ data: [] })
       : supabase
@@ -64,7 +76,19 @@ export default async function StudentPage({ params }: PageProps<"/dashboard/stud
     isAdmin && tertiary
       ? supabase.from("batches").select("id, name, programme_id").eq("school_id", school.id).order("name")
       : Promise.resolve({ data: [] }),
+    canMessage
+      ? supabase.from("school_settings").select("sms_name, sms_quiet_hours, sms_quiet_start, sms_quiet_end").eq("school_id", school.id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    canMessage && isAdmin
+      ? supabase.rpc("sms_credit_balance", { p_school_id: school.id }).then((r) => r.data ?? 0)
+      : Promise.resolve(null),
+    tertiary ? Promise.resolve({ data: [] }) : supabase.rpc("guardians_not_reached", { p_student_id: student.id }),
   ]);
+  const quietNote = smsSettings
+    ? quietHoursText({ on: smsSettings.sms_quiet_hours, start: smsSettings.sms_quiet_start, end: smsSettings.sms_quiet_end })
+    : null;
+  const unreachable = new Set((notReached ?? []).map((row) => row.guardian_id));
+  const alertGuardians = (links ?? []).filter((link) => link.alerts_enabled).length;
 
   // The database enforces the same rule; this only decides what to show.
   const canManageGuardians = !tertiary && (isAdmin || delegation !== null);
@@ -102,7 +126,7 @@ export default async function StudentPage({ params }: PageProps<"/dashboard/stud
         {tertiary ? null : (
           <Card
             title="Guardians"
-            description="Guardians get attendance alerts by SMS. They are told by SMS whenever they are added or removed, their number changes, or alerts are turned off or on."
+            description="Guardians get attendance alerts by SMS. They are told by SMS whenever they are added or removed, their number changes, or alerts are turned off or on. If the last SMS did not reach a guardian, check their number."
           >
             {(links ?? []).length === 0 ? (
               <EmptyState>No guardians yet. Without a guardian, nobody is alerted about this student.</EmptyState>
@@ -123,6 +147,7 @@ export default async function StudentPage({ params }: PageProps<"/dashboard/stud
                           <p className="font-mono text-sm text-muted">{formatPhoneForDisplay(guardian.phone)}</p>
                         </div>
                         <div className="flex flex-wrap gap-2">
+                          {unreachable.has(guardian.id) ? <Badge tone="danger">Last SMS not delivered</Badge> : null}
                           {link.alerts_enabled ? <Badge tone="success">Alerts on</Badge> : <Badge tone="warning">Alerts off</Badge>}
                           {link.receives_present_alerts ? <Badge tone="accent">Daily present alerts</Badge> : null}
                           {!guardian.broadcasts_enabled ? <Badge>No broadcasts</Badge> : null}
@@ -167,7 +192,7 @@ export default async function StudentPage({ params }: PageProps<"/dashboard/stud
                       {canManageGuardians ? (
                         <details className="text-sm">
                           <summary className="cursor-pointer text-accent">Change name or number</summary>
-                          <ActionForm action={updateGuardian.bind(null, guardian.id)} className="mt-3 grid items-end gap-3 sm:grid-cols-[1fr_1fr_auto]">
+                          <ActionForm action={updateGuardian.bind(null, guardian.id)} className="mt-3 grid items-start gap-3 sm:grid-cols-[1fr_1fr_auto]">
                             <TextField name="fullName" label="Name" defaultValue={guardian.full_name} />
                             <TextField
                               name="phone"
@@ -176,7 +201,9 @@ export default async function StudentPage({ params }: PageProps<"/dashboard/stud
                               inputMode="tel"
                               defaultValue={formatPhoneForDisplay(guardian.phone)}
                             />
-                            <SubmitButton>Save</SubmitButton>
+                            <FieldButton>
+                              <SubmitButton>Save</SubmitButton>
+                            </FieldButton>
                             <div className="sm:col-span-3">
                               <FormMessage />
                             </div>
@@ -193,7 +220,7 @@ export default async function StudentPage({ params }: PageProps<"/dashboard/stud
             )}
 
             {canManageGuardians ? (
-              <ActionForm action={addGuardian.bind(null, student.id)} resetOnSuccess className="mt-5 grid items-end gap-4 sm:grid-cols-3">
+              <ActionForm action={addGuardian.bind(null, student.id)} resetOnSuccess className="mt-5 grid items-start gap-4 sm:grid-cols-3">
                 <TextField name="fullName" label="Guardian's name" autoComplete="off" />
                 <TextField name="phone" label="Phone" type="tel" inputMode="tel" placeholder="024 123 4567" autoComplete="off" />
                 <TextField name="relationship" label="Relationship" placeholder="Mother, uncle, guardian" />
@@ -207,6 +234,28 @@ export default async function StudentPage({ params }: PageProps<"/dashboard/stud
             )}
           </Card>
         )}
+
+        {canMessage ? (
+          <Card
+            title="Message guardians"
+            description="An SMS to the guardians who get this student's attendance alerts. Admins can see every message on the Messages page."
+          >
+            {alertGuardians === 0 ? (
+              <EmptyState>No guardian gets SMS for this student. Add a guardian or turn their alerts on first.</EmptyState>
+            ) : (
+              <MessageComposer
+                action={sendStudentMessage}
+                schoolName={smsSettings?.sms_name ?? school.name}
+                balance={balance}
+                recipients={alertGuardians}
+                hidden={{ studentId: student.id }}
+                placeholder={`Please see the class teacher about ${student.full_name.split(" ")[0]} this week.`}
+                sendLabel="Send message"
+                quietNote={quietNote}
+              />
+            )}
+          </Card>
+        ) : null}
 
         {editable ? (
           <Card title="Details">
@@ -247,13 +296,23 @@ export default async function StudentPage({ params }: PageProps<"/dashboard/stud
 
             <div className="mt-6 flex flex-wrap gap-3 border-t border-line pt-4">
               {student.status === "disabled" ? (
-                <InlineAction action={setStudentStatus} hidden={{ studentId: student.id, status: "active" }} label="Turn back on" />
+                <InlineAction
+                  action={setStudentStatus}
+                  hidden={{ studentId: student.id, status: "active" }}
+                  label="Turn back on"
+                  confirm={`Turn ${student.full_name} back on? ${tertiary ? "They can sign in and check in again." : "They appear on registers again, and their guardians' alerts resume."}`}
+                />
               ) : (
                 <InlineAction
                   action={setStudentStatus}
                   hidden={{ studentId: student.id, status: student.status === "pending" ? "active" : "disabled" }}
                   label={student.status === "pending" ? "Approve" : "Turn off"}
                   variant={student.status === "pending" ? "primary" : "secondary"}
+                  confirm={
+                    student.status === "pending"
+                      ? undefined
+                      : `Turn off ${student.full_name}? ${tertiary ? "They can no longer sign in or check in." : "They no longer appear on registers, and their guardians get no attendance alerts."} Their past attendance stays, and you can turn them back on at any time.`
+                  }
                 />
               )}
               {student.user_id === null ? (

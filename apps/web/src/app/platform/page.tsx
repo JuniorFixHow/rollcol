@@ -4,11 +4,12 @@ import type { Metadata } from "next";
 import { refresh } from "next/cache";
 import { Suspense } from "react";
 import { Brand } from "@/components/brand";
-import { InlineAction } from "@/components/form";
+import { ActionForm, FormMessage, InlineAction, SubmitButton, TextField } from "@/components/form";
 import { SignOutButton } from "@/components/sign-out-button";
-import { Badge, EmptyState, PageHeader, PageSkeleton, Table, Td, formatDate } from "@/components/ui";
+import { Badge, Card, EmptyState, PageHeader, PageSkeleton, Table, Td, formatDate, formatDateTime } from "@/components/ui";
 import { requirePlatformAdmin } from "@/lib/auth";
 import { type FormState, failed, succeeded } from "@/lib/forms";
+import { grantCredits } from "../dashboard/messages/actions";
 
 export const metadata: Metadata = { title: "Platform" };
 export const instant = false;
@@ -37,6 +38,7 @@ export default function PlatformPage() {
         <SignOutButton variant="ghost" />
       </div>
       <Suspense fallback={<PageSkeleton />}>
+        <SmsSender />
         <Schools />
       </Suspense>
     </div>
@@ -64,7 +66,7 @@ async function Schools() {
       {schools.length === 0 ? (
         <EmptyState>No schools yet.</EmptyState>
       ) : (
-        <Table headers={["School", "Contact", "People", "Registered", "Status", ""]}>
+        <Table headers={["School", "Contact", "People", "SMS", "Registered", "Status", ""]}>
           {schools.map((school) => (
             <tr key={school.id}>
               <Td>
@@ -80,6 +82,33 @@ async function Schools() {
               <Td className="text-sm tabular-nums">
                 {school.student_count} students
                 <span className="block text-muted">{school.staff_count} staff</span>
+              </Td>
+              <Td className="text-sm">
+                {school.type === "tertiary" ? (
+                  <span className="text-muted">Not used</span>
+                ) : (
+                  <>
+                    <span className="block tabular-nums">{school.sms_credits} credits</span>
+                    <span className="block text-muted tabular-nums">{school.sms_sent_30_days} sent in 30 days</span>
+                    <details className="mt-1">
+                      <summary className="cursor-pointer text-xs text-accent">Add credits</summary>
+                      <ActionForm action={grantCredits} resetOnSuccess className="mt-2 grid w-64 items-start gap-2">
+                        <input type="hidden" name="schoolId" value={school.id} />
+                        <TextField
+                          name="amount"
+                          label="Credits"
+                          type="number"
+                          inputMode="numeric"
+                          step="1"
+                          hint="A minus number takes credits back."
+                        />
+                        <TextField name="reason" label="Note" placeholder="Term 1 credits" />
+                        <SubmitButton size="sm">Save</SubmitButton>
+                        <FormMessage />
+                      </ActionForm>
+                    </details>
+                  </>
+                )}
               </Td>
               <Td className="text-sm">{formatDate(school.created_at)}</Td>
               <Td>
@@ -113,5 +142,62 @@ async function Schools() {
         </Table>
       )}
     </>
+  );
+}
+
+/** What a reply from send-sms means, in words. */
+function explainReply(status: number | null, reply: string, error: string): { ok: boolean; text: string } {
+  if (status === null) return { ok: false, text: error ? `The call failed: ${error}` : "No reply was recorded." };
+  if (status === 200) return { ok: true, text: `Working. Last run: ${reply}` };
+  if (status === 401 && reply.includes("Not allowed")) {
+    return { ok: false, text: "The secret does not match. CRON_SECRET in Edge Function secrets must equal cron_secret in private.config." };
+  }
+  if (status === 401) {
+    return { ok: false, text: "Supabase refused the call. Deploy send-sms again with --no-verify-jwt." };
+  }
+  if (status === 404) return { ok: false, text: "send-sms was not found. Check it is deployed and sms_sender_url is right." };
+  return { ok: false, text: `send-sms replied ${status}: ${reply || error}` };
+}
+
+async function SmsSender() {
+  const { supabase } = await requirePlatformAdmin();
+  const { data } = await supabase.rpc("platform_sms_sender_log");
+  const rows = data ?? [];
+  const first = rows[0];
+  if (!first) return null;
+  const replies = rows.filter((row) => row.replied_at !== null);
+
+  let summary: { ok: boolean; text: string };
+  if (!first.configured) {
+    summary = { ok: false, text: "The sender is not set up. Add sms_sender_url and cron_secret to private.config (see the README)." };
+  } else if (replies.length === 0) {
+    summary =
+      first.waiting > 0
+        ? { ok: false, text: "Messages are waiting but the database has not called the sender in the last six hours." }
+        : { ok: true, text: "Set up. No messages were due recently." };
+  } else {
+    const last = replies[0];
+    summary = explainReply(last.status_code, last.reply ?? "", last.error ?? "");
+  }
+
+  return (
+    <Card title="SMS sender" className="mb-8">
+      <div className="flex flex-wrap items-center gap-3">
+        <Badge tone={summary.ok ? "success" : "danger"}>{summary.ok ? "OK" : "Needs attention"}</Badge>
+        <p className="text-sm">{summary.text}</p>
+      </div>
+      {first.waiting > 0 ? (
+        <p className="mt-2 text-sm text-muted">{first.waiting} messages have been waiting for more than 2 minutes.</p>
+      ) : null}
+      {replies.length > 0 ? (
+        <ul className="mt-3 space-y-1 text-xs text-muted">
+          {replies.map((row, index) => (
+            <li key={`${row.replied_at}-${index}`} className="font-mono">
+              {row.replied_at ? formatDateTime(row.replied_at) : ""} · {row.status_code ?? "no reply"} · {row.reply ?? row.error}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </Card>
   );
 }

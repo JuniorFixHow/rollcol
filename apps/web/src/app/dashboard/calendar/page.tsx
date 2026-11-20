@@ -30,10 +30,21 @@ async function addPeriod(_: FormState, formData: FormData): Promise<FormState> {
 async function removePeriod(_: FormState, formData: FormData): Promise<FormState> {
   "use server";
   const { supabase, member } = await requireAdmin();
+  const periodId = String(formData.get("periodId") ?? "");
+  const { count } = await supabase
+    .from("course_runs")
+    .select("id", { count: "exact", head: true })
+    .eq("academic_period_id", periodId)
+    .eq("school_id", member.school.id);
+  if (count && count > 0) {
+    return failed(
+      `This semester has ${count} ${count === 1 ? "course" : "courses"}. Remove them from the semester on the Courses page first.`,
+    );
+  }
   const { error } = await supabase
     .from("academic_periods")
     .delete()
-    .eq("id", String(formData.get("periodId") ?? ""))
+    .eq("id", periodId)
     .eq("school_id", member.school.id);
   if (error) return failed(error);
   refresh();
@@ -93,7 +104,11 @@ export default async function CalendarPage() {
                         hidden={{ periodId: period.id }}
                         label="Remove"
                         variant="ghost"
-                        confirm={`Remove ${period.name}?`}
+                        confirm={
+                          member.school.type === "tertiary"
+                            ? `Remove ${period.name}? Only a semester without courses can be removed. Check-in sessions and marks are not deleted.`
+                            : `Remove ${period.name}? No registers or marks are deleted. Totals on class pages are worked out from term dates, so registers from these dates count again as soon as a term covers them.`
+                        }
                       />
                     ) : null}
                   </Td>

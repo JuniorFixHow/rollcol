@@ -4,7 +4,7 @@ import type { ComponentProps, ReactNode } from "react";
 /** Shared look for buttons and links styled as buttons. */
 export function buttonClass(variant: "primary" | "secondary" | "danger" | "ghost" = "primary", size: "md" | "sm" = "md") {
   const base =
-    "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60";
+    "inline-flex cursor-pointer items-center justify-center gap-2 rounded-md font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60";
   const sizes = { md: "h-10 px-4 text-sm", sm: "h-8 px-3 text-sm" };
   const variants = {
     primary: "bg-accent text-accent-foreground hover:bg-accent-hover",
@@ -16,7 +16,7 @@ export function buttonClass(variant: "primary" | "secondary" | "danger" | "ghost
 }
 
 export const inputClass =
-  "block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted/70 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25 aria-invalid:border-danger";
+  "block h-10 w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted/70 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25 aria-invalid:border-danger";
 
 export function LinkButton({
   variant = "primary",
@@ -123,4 +123,34 @@ export function formatDate(value: string | null): string {
   if (!value) return "";
   const date = value.length === 10 ? new Date(`${value}T00:00:00Z`) : new Date(value);
   return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Africa/Accra" }).format(date);
+}
+
+/** "10:05" in Ghana time. */
+export function formatTime(value: string | null): string {
+  if (!value) return "";
+  return new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Africa/Accra" }).format(new Date(value));
+}
+
+/** "Thursday, 20 November 2026" in Ghana time. "2026-11-20" dates are read as calendar days. */
+export function formatLongDate(value: string | Date): string {
+  const date = typeof value === "string" ? new Date(value.length === 10 ? `${value}T00:00:00Z` : value) : value;
+  return new Intl.DateTimeFormat("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Africa/Accra",
+  }).format(date);
+}
+
+/** "27 Nov 2026, 17:00" in Ghana time. */
+export function formatDateTime(value: string): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Africa/Accra",
+  }).format(new Date(value));
 }

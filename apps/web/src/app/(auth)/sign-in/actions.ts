@@ -1,10 +1,11 @@
 "use server";
 
-import { emailSignInSchema, schoolIdSignInSchema, toMember } from "@rollcol/shared";
+import { chooseMember, emailSignInSchema, schoolIdSignInSchema, toMemberships } from "@rollcol/shared";
 import { redirect } from "next/navigation";
 import { homeFor } from "@/lib/auth";
 import { type FormState, failed, formValues, invalid } from "@/lib/forms";
 import { safeNextPath } from "@/lib/redirects";
+import { rememberSchool } from "@/lib/school-actions";
 import { createClient } from "@/lib/supabase/server";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
@@ -30,7 +31,7 @@ export async function signInWithSchoolId(_: FormState, formData: FormData): Prom
   }
   if (result.status !== "ok") return failed(WRONG_DETAILS, values);
 
-  return finishSignIn(supabase, result.email, parsed.data.password, values);
+  return finishSignIn(supabase, result.email, parsed.data.password, values, parsed.data.schoolCode);
 }
 
 export async function signInWithEmail(_: FormState, formData: FormData): Promise<FormState> {
@@ -47,6 +48,7 @@ async function finishSignIn(
   email: string,
   password: string,
   values: Record<string, string>,
+  schoolCode?: string,
 ): Promise<FormState> {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
@@ -59,8 +61,20 @@ async function finishSignIn(
     return failed(WRONG_DETAILS, values);
   }
 
-  const { data } = await supabase.rpc("current_member");
-  const destination = safeNextPath(values.next) ?? homeFor(toMember(data?.[0]));
+  const [{ data: rows }, { data: isAdmin }] = await Promise.all([
+    supabase.rpc("my_memberships"),
+    supabase.rpc("is_platform_admin"),
+  ]);
+  const memberships = toMemberships(rows, isAdmin === true);
+  // Signing in with a school code opens that school's dashboard.
+  const signedInSchool = schoolCode ? memberships.find((m) => m.school.code === schoolCode) : undefined;
+  if (signedInSchool) await rememberSchool(signedInSchool.school.id);
+
+  const member = chooseMember(memberships, isAdmin === true, {
+    preferredSchoolId: signedInSchool?.school.id ?? null,
+    preferKind: "staff",
+  });
+  const destination = safeNextPath(values.next) ?? homeFor(member);
   redirect(destination);
 }
 

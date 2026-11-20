@@ -1,8 +1,8 @@
 // Deletes the caller's own account (in-app account deletion, required by Apple).
 // Deploy: pnpm exec supabase functions deploy delete-account
 //
-// The database decides what deletion means: staff rows, student rows and their
-// enrolments cascade; the last admin of a school with other staff is blocked.
+// The database decides what deletion means: staff and student rows in every
+// school cascade; the last admin of a school with other staff is blocked.
 import { createClient } from "npm:@supabase/supabase-js@2.119.2";
 
 const cors = {
@@ -32,10 +32,17 @@ Deno.serve(async (request: Request) => {
   const { data: userData, error: userError } = await asUser.auth.getUser();
   if (userError || !userData.user) return json({ error: "Sign in first." }, 401);
 
-  const { data: effect, error: effectError } = await asUser.rpc("account_deletion_effect");
-  if (effectError) return json({ error: "Could not check the account." }, 500);
-  if (effect === "last_admin") {
-    return json({ error: "You are the only admin. Make another staff member an admin first." }, 409);
+  // One row per affected school; any "last_admin" blocks deletion.
+  const { data: effects, error: effectError } = await asUser.rpc("account_deletion_effects");
+  if (effectError || !Array.isArray(effects)) return json({ error: "Could not check the account." }, 500);
+  const blocked: string[] = [];
+  for (const row of effects) {
+    if (typeof row === "object" && row !== null && row.effect === "last_admin" && typeof row.school_name === "string") {
+      blocked.push(row.school_name);
+    }
+  }
+  if (blocked.length > 0) {
+    return json({ error: `You are the only admin at ${blocked.join(", ")}. Make another staff member an admin first.` }, 409);
   }
 
   const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });

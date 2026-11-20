@@ -4,6 +4,7 @@ import { accountSchema, schoolDetailsSchema } from "@rollcol/shared";
 import { redirect } from "next/navigation";
 import { type FormState, failed, formValues, invalid } from "@/lib/forms";
 import { getSiteUrl } from "@/lib/supabase/admin";
+import { rememberSchool } from "@/lib/school-actions";
 import { createClient } from "@/lib/supabase/server";
 
 const signUpSchema = schoolDetailsSchema.and(accountSchema);
@@ -39,19 +40,19 @@ export async function registerSchool(_: FormState, formData: FormData): Promise<
 
   if (error) {
     if (error.code === "weak_password") return failed("Choose a stronger password.", values);
-    if (error.code === "user_already_exists") return failed("An account with this email already exists. Sign in instead.", values);
+    if (error.code === "user_already_exists") return failed("An account with this email already exists. Sign in, then choose Register another school from Your account.", values);
     if (error.status === 429) return failed("Too many sign-ups from here. Wait a few minutes, then try again.", values);
     return failed("We could not create your account. Please try again.", values);
   }
 
   // Supabase returns a user with no identities when the email is already registered.
   if (data.user && data.user.identities?.length === 0) {
-    return failed("An account with this email already exists. Sign in instead.", values);
+    return failed("An account with this email already exists. Sign in, then choose Register another school from Your account.", values);
   }
 
   if (!data.session) redirect("/sign-up/check-email");
 
-  const { error: schoolError } = await supabase.rpc("create_school", {
+  const { data: created, error: schoolError } = await supabase.rpc("create_school", {
     p_name: pendingSchool.name,
     p_type: pendingSchool.type,
     p_contact_phone: pendingSchool.contact_phone,
@@ -63,5 +64,7 @@ export async function registerSchool(_: FormState, formData: FormData): Promise<
   if (schoolError) redirect("/onboarding");
 
   await supabase.auth.updateUser({ data: { pending_school: null } });
+  const school = created[0];
+  if (school) await rememberSchool(school.school_id);
   redirect("/dashboard");
 }

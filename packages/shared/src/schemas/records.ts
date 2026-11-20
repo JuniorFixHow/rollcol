@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { classPeriodsSchema } from "./registers";
 import { STAFF_ROLES } from "../constants";
 import { emailSchema, personNameSchema, schoolIdSchema } from "./school";
 
@@ -41,6 +42,7 @@ export const academicPeriodSchema = z
 export const classSchema = z.object({
   name: z.string().trim().min(1, "Enter the class name.").max(60),
   classTeacherId: optionalUuid,
+  periodsPerDay: classPeriodsSchema.optional(),
 });
 
 export const subjectSchema = z.object({
@@ -100,5 +102,8 @@ export const courseRunSchema = z.object({
 
 export const guardianDelegationSchema = z.object({
   staffId: uuid,
-  expiresOn: isoDate,
+  /** Date and time in Ghana, as a datetime-local input sends it: "2026-11-27T17:00". */
+  expiresAt: z
+    .string({ message: "Choose a date and time." })
+    .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, "Choose a date and time."),
 });

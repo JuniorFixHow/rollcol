@@ -36,6 +36,7 @@ export function SchoolFields({
         <RadioGroupField
           name="registerMode"
           label="How are registers taken?"
+          hint="Not sure? Choose either. An admin can change this at any time in Settings."
           defaultValue={defaults?.registerMode}
           options={[
             { value: "daily", label: "Once a day", description: "The class teacher marks the register each morning. Usual for basic schools." },

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ActionForm, FormMessage, InlineAction, SelectField, SubmitButton, TextField } from "@/components/form";
+import { ActionForm, FieldButton, FormMessage, InlineAction, SelectField, SubmitButton, TextField } from "@/components/form";
 import { Badge, Card, EmptyState, PageHeader, Table, Td } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
 import { listTeachers } from "@/lib/queries";
@@ -105,6 +105,7 @@ export default async function CoursesPage({ searchParams }: PageProps<"/dashboar
                                 hidden={{ courseRunId: run.id, staffId: row.staff_id }}
                                 label="Remove"
                                 variant="ghost"
+                                confirm={`Remove ${row.staff?.full_name ?? "this lecturer"} from this course? They can no longer run check-in sessions for it. Past sessions stay.`}
                               />
                             ) : null}
                           </li>
@@ -151,7 +152,7 @@ export default async function CoursesPage({ searchParams }: PageProps<"/dashboar
               (courses ?? []).length === 0 ? (
                 <p className="mt-4 text-sm text-muted">Add courses below first.</p>
               ) : (
-                <ActionForm action={addCourseRun} resetOnSuccess className="mt-5 grid items-end gap-4 sm:grid-cols-[1fr_1fr_auto]">
+                <ActionForm action={addCourseRun} resetOnSuccess className="mt-5 grid items-start gap-4 sm:grid-cols-[1fr_1fr_auto]">
                   <input type="hidden" name="academicPeriodId" value={semester.id} />
                   <SelectField
                     name="courseId"
@@ -160,7 +161,9 @@ export default async function CoursesPage({ searchParams }: PageProps<"/dashboar
                     options={(courses ?? []).map((c) => ({ value: c.id, label: `${c.code} ${c.title}` }))}
                   />
                   <SelectField name="lecturerId" label="Lecturer" placeholder="Choose later" options={lecturerOptions} />
-                  <SubmitButton>Add to semester</SubmitButton>
+                  <FieldButton>
+                    <SubmitButton>Add to semester</SubmitButton>
+                  </FieldButton>
                   <div className="sm:col-span-3">
                     <FormMessage />
                   </div>
@@ -198,10 +201,12 @@ export default async function CoursesPage({ searchParams }: PageProps<"/dashboar
                   ))}
                 </ul>
               ) : null}
-              <ActionForm action={addCourse} resetOnSuccess className="grid items-end gap-4 sm:grid-cols-[10rem_1fr_auto]">
+              <ActionForm action={addCourse} resetOnSuccess className="grid items-start gap-4 sm:grid-cols-[10rem_1fr_auto]">
                 <TextField name="code" label="Code" placeholder="CSC 101" autoCapitalize="characters" />
                 <TextField name="title" label="Title" placeholder="Introduction to Computing" />
-                <SubmitButton>Add course</SubmitButton>
+                <FieldButton>
+                  <SubmitButton>Add course</SubmitButton>
+                </FieldButton>
                 <div className="sm:col-span-3">
                   <FormMessage />
                 </div>

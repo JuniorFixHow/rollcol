@@ -12,6 +12,13 @@ export default function StudentsUseTheAppPage() {
         confirmed your email, you can sign in there now. Check-in works only in the app, because it uses your
         phone&apos;s location.
       </p>
+      <p className="mt-4 text-sm text-muted">
+        Registering a school as its admin?{" "}
+        <a href="/onboarding" className="text-accent hover:underline">
+          Register a school
+        </a>
+        . Your student account is not affected.
+      </p>
       <div className="mt-5">
         <SignOutButton />
       </div>

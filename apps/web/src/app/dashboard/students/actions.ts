@@ -96,7 +96,7 @@ export async function addGuardian(studentId: string, _: FormState, formData: For
 }
 
 export async function updateGuardian(guardianId: string, _: FormState, formData: FormData): Promise<FormState> {
-  const { supabase } = await requireStaff();
+  const { supabase, member } = await requireStaff();
   const values = formValues(formData);
   const parsed = guardianSchema.pick({ fullName: true, phone: true }).safeParse(values);
   if (!parsed.success) return invalid(parsed.error, values);
@@ -104,26 +104,30 @@ export async function updateGuardian(guardianId: string, _: FormState, formData:
   const { error } = await supabase
     .from("guardians")
     .update({ full_name: parsed.data.fullName, phone: parsed.data.phone })
-    .eq("id", guardianId);
+    .eq("id", guardianId)
+    .eq("school_id", member.school.id);
   if (error) return failed(error, values);
   refresh();
   return succeeded("Saved.");
 }
 
 export async function setGuardianLinkOption(_: FormState, formData: FormData): Promise<FormState> {
-  const { supabase } = await requireStaff();
+  const { supabase, member } = await requireStaff();
   const linkId = String(formData.get("linkId") ?? "");
   const option = String(formData.get("option") ?? "");
   const on = formBoolean(formData, "on") || formData.get("on") === "true";
 
   if (option === "alerts") {
-    const { error } = await supabase.from("guardian_links").update({ alerts_enabled: on }).eq("id", linkId);
+    const { error } = await supabase.from("guardian_links").update({ alerts_enabled: on })
+      .eq("id", linkId)
+      .eq("school_id", member.school.id);
     if (error) return failed(error);
   } else if (option === "broadcasts") {
     const { error } = await supabase
       .from("guardians")
       .update({ broadcasts_enabled: on })
-      .eq("id", String(formData.get("guardianId") ?? ""));
+      .eq("id", String(formData.get("guardianId") ?? ""))
+      .eq("school_id", member.school.id);
     if (error) return failed(error);
   } else if (option === "present") {
     const { error } = await supabase.rpc("set_present_alert_guardian", {
@@ -139,11 +143,12 @@ export async function setGuardianLinkOption(_: FormState, formData: FormData): P
 }
 
 export async function removeGuardianLink(_: FormState, formData: FormData): Promise<FormState> {
-  const { supabase } = await requireStaff();
+  const { supabase, member } = await requireStaff();
   const { error, count } = await supabase
     .from("guardian_links")
     .delete({ count: "exact" })
-    .eq("id", String(formData.get("linkId") ?? ""));
+    .eq("id", String(formData.get("linkId") ?? ""))
+    .eq("school_id", member.school.id);
   if (error) return failed(error);
   if (count === 0) return failed("You cannot remove this guardian.");
   refresh();

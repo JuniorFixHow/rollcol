@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Confirm your new email address</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f7f8fa; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#1b2430;">
+<div style="display:none; max-height:0; overflow:hidden; opacity:0;">Confirm the new email address for your RollCol account.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f7f8fa;">
+  <tr>
+    <td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">
+        <tr>
+          <td style="padding:0 4px 20px 4px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="width:32px; height:32px; vertical-align:middle;"><img src="{{ .SiteURL }}/icons/icon-192.png" width="32" height="32" alt="RollCol" style="display:block; width:32px; height:32px; border:0; border-radius:8px;"></td>
+                <td style="padding-left:10px; font-size:18px; font-weight:700; color:#1b2430; letter-spacing:-0.2px;">RollCol</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="background-color:#ffffff; border:1px solid #e2e6ec; border-radius:12px; padding:32px 28px;">
+            <h1 style="margin:0 0 16px 0; font-size:22px; line-height:1.3; font-weight:700; color:#1b2430;">Confirm your new email address</h1>
+            <p style="margin:0 0 14px 0; font-size:15px; line-height:1.6; color:#1b2430;">{{ if .Data.full_name }}Hello {{ .Data.full_name }},{{ else }}Hello,{{ end }}</p>
+            <p style="margin:0 0 14px 0; font-size:15px; line-height:1.6; color:#1b2430;">You asked to change the email address on your RollCol account from <strong>{{ .Email }}</strong> to <strong>{{ .NewEmail }}</strong>. Confirm the change using the button below.</p>
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0;">
+              <tr>
+                <td style="background-color:#0f6b62; border-radius:8px;">
+                  <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email_change&next=/dashboard/account" style="display:inline-block; padding:13px 26px; font-size:16px; font-weight:600; color:#ffffff; text-decoration:none;">Confirm new email address</a>
+                </td>
+              </tr>
+            </table>
+            <p style="margin:0 0 14px 0; font-size:15px; line-height:1.6; color:#5b6676;">Until you confirm, keep signing in with your current email address. Your school code and school ID stay the same.</p>
+            <p style="margin:0 0 14px 0; font-size:15px; line-height:1.6; color:#5b6676;"><strong style="color:#1b2430;">Did not ask for this?</strong> Do not click the button. Change your password straight away and tell your school admin.</p>
+            <p style="margin:24px 0 6px 0; font-size:13px; line-height:1.5; color:#5b6676;">If the button does not work, copy this link into your browser:</p>
+            <p style="margin:0; font-size:13px; line-height:1.5; word-break:break-all;"><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email_change&next=/dashboard/account" style="color:#0f6b62;">{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email_change&next=/dashboard/account</a></p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:20px 4px 0 4px; font-size:12px; line-height:1.6; color:#5b6676;">
+            <p style="margin:0 0 6px 0;">You received this email because an email change was requested for a RollCol account.</p>
+            <p style="margin:0 0 6px 0;">For your security, this link works once and expires after a short time. RollCol will never ask for your password by email or phone.</p>
+            <p style="margin:0;">RollCol, school attendance by Teqxa. <a href="{{ .SiteURL }}/privacy" style="color:#5b6676;">Privacy policy</a></p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

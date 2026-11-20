@@ -3,7 +3,7 @@ import { Link } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { usePalette } from "@/components/theme";
-import { Body, Button, Card, Field, LegalLinks, Message, Screen, Title } from "@/components/ui";
+import { Body, Button, Card, Field, LegalLinks, Message, Screen, Title, Logo } from "@/components/ui";
 import { WEB_URL, supabase } from "@/lib/supabase";
 
 type FieldName = "schoolCode" | "schoolId" | "fullName" | "email" | "password";
@@ -77,7 +77,7 @@ export default function SignUpScreen() {
       if (authError) {
         setError(
           authError.code === "user_already_exists"
-            ? "An account with this email already exists. Sign in instead."
+            ? "An account with this email already exists. Sign in, then join this school from Your schools."
             : authError.status === 429
               ? "Too many sign-ups. Wait a few minutes, then try again."
               : "We could not create your account. Please try again.",
@@ -85,7 +85,7 @@ export default function SignUpScreen() {
         return;
       }
       if (data.user && data.user.identities?.length === 0) {
-        setError("An account with this email already exists. Sign in instead.");
+        setError("An account with this email already exists. Sign in, then join this school from Your schools.");
         return;
       }
       if (!data.session) {
@@ -111,6 +111,7 @@ export default function SignUpScreen() {
     return (
       <Screen>
         <View style={styles.header}>
+          <Logo />
           <Title>Check your email</Title>
           <Body muted>
             We sent a link to {values.email.trim()}. Open it to confirm your address, then come back and sign in with your school

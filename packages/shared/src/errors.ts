@@ -14,7 +14,8 @@ interface DatabaseErrorLike {
 const CONSTRAINT_MESSAGES: Readonly<Record<string, string>> = {
   staff_school_number_unique: "Someone at this school already uses that school ID.",
   students_school_number_unique: "A student at this school already uses that school ID.",
-  staff_user_id_key: "This person already has an account at a school.",
+  staff_school_user_unique: "This person is already on the staff of this school.",
+  students_school_user_unique: "You have already joined this school.",
   guardians_phone_unique: "Another guardian at this school already uses that phone number.",
   guardian_links_unique: "This guardian is already linked to this student.",
   classes_name_unique: "A class with that name already exists.",

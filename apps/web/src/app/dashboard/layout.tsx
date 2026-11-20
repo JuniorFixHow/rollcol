@@ -3,7 +3,9 @@ import { Suspense } from "react";
 import { Brand } from "@/components/brand";
 import { SignOutButton } from "@/components/sign-out-button";
 import { PageSkeleton } from "@/components/ui";
-import { requireStaff } from "@/lib/auth";
+import { SchoolSwitcher } from "@/components/school-switcher";
+import { ThemePicker } from "@/components/theme";
+import { requireStaff, staffMemberships } from "@/lib/auth";
 import { DashboardNav, type NavItem } from "./nav";
 
 // Every dashboard page depends on the signed-in user, so navigation into it blocks on the server.
@@ -30,14 +32,17 @@ export default function DashboardLayout({ children }: LayoutProps<"/dashboard">)
 }
 
 async function Sidebar() {
-  const { member } = await requireStaff();
+  const { member, memberships } = await requireStaff();
   const { school, role } = member;
+  const staffSchools = staffMemberships(memberships).map((m) => ({ id: m.school.id, name: m.school.name }));
   const isAdmin = role === "admin";
   const tertiary = school.type === "tertiary";
 
   const items: NavItem[] = [{ href: "/dashboard", label: "Overview" }];
+  if (!tertiary) items.push({ href: "/dashboard/registers", label: "Registers" });
   items.push({ href: "/dashboard/students", label: "Students" });
   items.push(tertiary ? { href: "/dashboard/courses", label: "Courses" } : { href: "/dashboard/classes", label: "Classes" });
+  if (!tertiary) items.push({ href: "/dashboard/messages", label: "Messages" });
   if (isAdmin) {
     items.push({ href: "/dashboard/calendar", label: `${periodWordTitle(school.type)}s` });
     items.push({ href: "/dashboard/staff", label: "Staff" });
@@ -48,15 +53,20 @@ async function Sidebar() {
   return (
     <>
       <div className="min-w-0">
-        <p className="truncate text-sm font-medium">{school.name}</p>
-        <p className="truncate text-xs text-muted">
+        {staffSchools.length > 1 ? (
+          <SchoolSwitcher schools={staffSchools} currentId={school.id} />
+        ) : (
+          <p className="truncate text-sm font-medium">{school.name}</p>
+        )}
+        <p className="mt-1 truncate text-xs text-muted">
           {member.fullName}, {staffRoleLabel(role, school.type)}
         </p>
       </div>
       <DashboardNav items={items} />
-      <div className="mt-auto hidden md:block">
+      <div className="mt-auto hidden space-y-3 md:block">
+        <ThemePicker />
         {member.isPlatformAdmin ? (
-          <a href="/platform" className="mb-2 block text-xs text-accent hover:underline">
+          <a href="/platform" className="block text-xs text-accent hover:underline">
             RollCol platform
           </a>
         ) : null}
