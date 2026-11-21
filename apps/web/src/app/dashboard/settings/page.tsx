@@ -1,8 +1,8 @@
-import { formatPhoneForDisplay, registerTimingSchema, schoolSettingsSchema, shortTime, smsSettingsSchema } from "@rollcol/shared";
+import { formatPhoneForDisplay, registerTimingSchema, schoolSettingsSchema, sessionRulesSchema, shortTime, smsSettingsSchema } from "@rollcol/shared";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { refresh } from "next/cache";
-import { ActionForm, CheckboxField, FormMessage, RadioGroupField, SubmitButton, TextField } from "@/components/form";
+import { ActionForm, CheckboxField, DependsOn, FormMessage, RadioGroupField, SubmitButton, TextField } from "@/components/form";
 import { Card, PageHeader } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth";
 import { type FormState, failed, formBoolean, formValues, invalid, succeeded } from "@/lib/forms";
@@ -40,10 +40,18 @@ async function saveSettings(_: FormState, formData: FormData): Promise<FormState
         smsAbsenceAlerts: formBoolean(formData, "smsAbsenceAlerts"),
         smsPresentAlerts: formBoolean(formData, "smsPresentAlerts"),
         quietHours: formBoolean(formData, "quietHours"),
-        quietStart: values.quietStart ?? "",
-        quietEnd: values.quietEnd ?? "",
+        quietStart: values.quietStart,
+        quietEnd: values.quietEnd,
       });
   if (sms && !sms.success) return invalid(sms.error, values);
+
+  const rules = tertiary
+    ? sessionRulesSchema.parse({
+        lecturersAddVenues: formBoolean(formData, "lecturersAddVenues"),
+        lecturersRemoveSelfCheckins: formBoolean(formData, "lecturersRemoveSelfCheckins"),
+        lecturersAddAfterEnd: formBoolean(formData, "lecturersAddAfterEnd"),
+      })
+    : null;
 
   const { error: schoolError } = await supabase
     .from("schools")
@@ -73,8 +81,15 @@ async function saveSettings(_: FormState, formData: FormData): Promise<FormState
             sms_absence_alerts: sms.data.smsAbsenceAlerts,
             sms_present_alerts: sms.data.smsPresentAlerts,
             sms_quiet_hours: sms.data.quietHours,
-            sms_quiet_start: sms.data.quietStart,
-            sms_quiet_end: sms.data.quietEnd,
+            // While quiet hours are off the times are not sent; keep the saved ones.
+            ...(sms.data.quietHours ? { sms_quiet_start: sms.data.quietStart, sms_quiet_end: sms.data.quietEnd } : {}),
+          }
+        : {}),
+      ...(rules
+        ? {
+            lecturers_add_venues: rules.lecturersAddVenues,
+            lecturers_remove_self_checkins: rules.lecturersRemoveSelfCheckins,
+            lecturers_add_after_end: rules.lecturersAddAfterEnd,
           }
         : {}),
     })
@@ -95,7 +110,7 @@ export default async function SettingsPage() {
     supabase
       .from("school_settings")
       .select(
-        "student_approval_required, student_self_signup, daily_register_closes_at, period_register_minutes, periods_per_day, sms_name, sms_absence_alerts, sms_present_alerts, sms_quiet_hours, sms_quiet_start, sms_quiet_end",
+        "student_approval_required, student_self_signup, daily_register_closes_at, period_register_minutes, periods_per_day, sms_name, sms_absence_alerts, sms_present_alerts, sms_quiet_hours, sms_quiet_start, sms_quiet_end, lecturers_add_venues, lecturers_remove_self_checkins, lecturers_add_after_end",
       )
       .eq("school_id", school.id)
       .single(),
@@ -117,6 +132,34 @@ export default async function SettingsPage() {
             />
           </div>
         </Card>
+
+        {tertiary ? (
+          <Card
+            title="Sessions"
+            description="What lecturers may do. Admins can always correct a session, and every change is kept with its reason, who made it and when."
+          >
+            <div className="space-y-4">
+              <CheckboxField
+                name="lecturersAddVenues"
+                label="Lecturers can add venues"
+                description="Their venues are marked unverified until an admin verifies them on the Venues page, but can be used straight away."
+                defaultChecked={settings?.lecturers_add_venues ?? true}
+              />
+              <CheckboxField
+                name="lecturersRemoveSelfCheckins"
+                label="Lecturers can remove a student who checked in themselves"
+                description="Off: only admins can. A student's own check-in has passed every check (their phone, location and the rotating code)."
+                defaultChecked={settings?.lecturers_remove_self_checkins ?? false}
+              />
+              <CheckboxField
+                name="lecturersAddAfterEnd"
+                label="Lecturers can change attendance after a session ends"
+                description="Off: lecturers can only add students while the session is open (for example a student whose battery died). Admins can correct up to 14 days later."
+                defaultChecked={settings?.lecturers_add_after_end ?? false}
+              />
+            </div>
+          </Card>
+        ) : null}
 
         {tertiary ? (
           <Card title="Students">
@@ -223,6 +266,7 @@ export default async function SettingsPage() {
                   defaultChecked={settings?.sms_quiet_hours ?? true}
                 />
                 <div className="mt-3 grid items-start gap-4 sm:grid-cols-2">
+                  <DependsOn field="quietHours" checked mode="disable" initially={settings?.sms_quiet_hours ?? true}>
                   <TextField
                     name="quietStart"
                     label="Quiet hours start"
@@ -236,6 +280,7 @@ export default async function SettingsPage() {
                     hint="For example, set 21:00 to 06:30 so the night's messages arrive at 6:30am."
                     defaultValue={shortTime(settings?.sms_quiet_end) || "07:00"}
                   />
+                  </DependsOn>
                 </div>
               </div>
             </div>

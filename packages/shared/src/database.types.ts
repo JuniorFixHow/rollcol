@@ -62,6 +62,85 @@ export type Database = {
           },
         ]
       }
+      attendance_sessions: {
+        Row: {
+          qr_seconds: number
+          course_run_id: string
+          created_at: string
+          ends_at: string
+          id: string
+          location: unknown | null
+          qr_required: boolean
+          radius_m: number | null
+          reward_marks: number
+          school_id: string
+          started_by: string | null
+          starts_at: string
+          venue_id: string | null
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
+        }
+        Insert: {
+          qr_seconds?: number
+          course_run_id: string
+          created_at?: string
+          ends_at: string
+          id?: string
+          location?: unknown | null
+          qr_required?: boolean
+          radius_m?: number | null
+          reward_marks?: number
+          school_id: string
+          started_by?: string | null
+          starts_at: string
+          venue_id?: string | null
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Update: {
+          qr_seconds?: number
+          course_run_id?: string
+          created_at?: string
+          ends_at?: string
+          id?: string
+          location?: unknown | null
+          qr_required?: boolean
+          radius_m?: number | null
+          reward_marks?: number
+          school_id?: string
+          started_by?: string | null
+          starts_at?: string
+          venue_id?: string | null
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_sessions_course_run_id_school_id_fkey"
+            columns: ["course_run_id"]
+            isOneToOne: false
+            referencedRelation: "course_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_sessions_venue_id_school_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_sessions_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       batches: {
         Row: {
           created_at: string
@@ -354,6 +433,46 @@ export type Database = {
             referencedRelation: "schools"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      devices: {
+        Row: {
+          active_from: string | null
+          approved_at: string | null
+          id: string
+          is_first: boolean
+          label: string
+          platform: string
+          replaced_at: string | null
+          requested_at: string
+          status: Database["public"]["Enums"]["device_status"]
+          user_id: string
+        }
+        Insert: {
+          active_from?: string | null
+          approved_at?: string | null
+          id?: string
+          is_first?: boolean
+          label?: string
+          platform: string
+          replaced_at?: string | null
+          requested_at?: string
+          status: Database["public"]["Enums"]["device_status"]
+          user_id: string
+        }
+        Update: {
+          active_from?: string | null
+          approved_at?: string | null
+          id?: string
+          is_first?: boolean
+          label?: string
+          platform?: string
+          replaced_at?: string | null
+          requested_at?: string
+          status?: Database["public"]["Enums"]["device_status"]
+          user_id?: string
+        }
+        Relationships: [
         ]
       }
       enrolments: {
@@ -812,6 +931,9 @@ export type Database = {
       }
       school_settings: {
         Row: {
+          lecturers_add_after_end: boolean
+          lecturers_add_venues: boolean
+          lecturers_remove_self_checkins: boolean
           sms_quiet_end: string
           sms_quiet_hours: boolean
           sms_quiet_start: string
@@ -828,6 +950,9 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          lecturers_add_after_end?: boolean
+          lecturers_add_venues?: boolean
+          lecturers_remove_self_checkins?: boolean
           sms_quiet_end?: string
           sms_quiet_hours?: boolean
           sms_quiet_start?: string
@@ -844,6 +969,9 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          lecturers_add_after_end?: boolean
+          lecturers_add_venues?: boolean
+          lecturers_remove_self_checkins?: boolean
           sms_quiet_end?: string
           sms_quiet_hours?: boolean
           sms_quiet_start?: string
@@ -922,6 +1050,116 @@ export type Database = {
           verified_by?: string | null
         }
         Relationships: []
+      }
+      session_adjustments: {
+        Row: {
+          action: string
+          created_at: string
+          id: number
+          reason: string
+          school_id: string
+          session_id: string
+          staff_id: string | null
+          student_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          reason: string
+          school_id: string
+          session_id: string
+          staff_id?: string | null
+          student_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          reason?: string
+          school_id?: string
+          session_id?: string
+          staff_id?: string | null
+          student_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_adjustments_session_id_school_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "attendance_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_adjustments_student_id_school_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_adjustments_staff_id_school_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_checkins: {
+        Row: {
+          accuracy_m: number | null
+          added_by: string | null
+          checked_in_at: string
+          device_id: string | null
+          distance_m: number | null
+          location: unknown | null
+          method: string
+          reason: string | null
+          school_id: string
+          session_id: string
+          student_id: string
+        }
+        Insert: {
+          accuracy_m?: number | null
+          added_by?: string | null
+          checked_in_at?: string
+          device_id?: string | null
+          distance_m?: number | null
+          location?: unknown | null
+          method: string
+          reason?: string | null
+          school_id: string
+          session_id: string
+          student_id: string
+        }
+        Update: {
+          accuracy_m?: number | null
+          added_by?: string | null
+          checked_in_at?: string
+          device_id?: string | null
+          distance_m?: number | null
+          location?: unknown | null
+          method?: string
+          reason?: string | null
+          school_id?: string
+          session_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_checkins_session_id_school_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "attendance_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_checkins_student_id_school_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sms_credit_entries: {
         Row: {
@@ -1269,11 +1507,151 @@ export type Database = {
           },
         ]
       }
+      venues: {
+        Row: {
+          verified_at: string | null
+          verified_by: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          location: unknown
+          name: string
+          radius_m: number
+          school_id: string
+          updated_at: string
+        }
+        Insert: {
+          verified_at?: string | null
+          verified_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          location: unknown
+          name: string
+          radius_m?: number
+          school_id: string
+          updated_at?: string
+        }
+        Update: {
+          verified_at?: string | null
+          verified_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          location?: unknown
+          name?: string
+          radius_m?: number
+          school_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venues_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      add_venue: {
+        Args: { p_school_id: string; p_name: string; p_lat: number; p_lng: number; p_radius_m: number }
+        Returns: string
+      }
+      add_checkin_manually: {
+        Args: { p_session_id: string; p_student_id: string; p_reason: string }
+        Returns: undefined
+      }
+      approve_device: {
+        Args: { p_device_id: string }
+        Returns: undefined
+      }
+      end_session: {
+        Args: { p_session_id: string; p_reason?: string | null }
+        Returns: undefined
+      }
+      my_open_sessions: {
+        Args: never
+        Returns: {
+          session_id: string
+          school_id: string
+          course_code: string
+          course_title: string
+          starts_at: string
+          ends_at: string
+          needs_location: boolean
+          qr_required: boolean
+          reward_marks: number
+          checked_in_at: string | null
+        }[]
+      }
+      pending_device_changes: {
+        Args: { p_school_id: string }
+        Returns: {
+          device_id: string
+          student_id: string
+          student_name: string
+          school_number: string | null
+          new_label: string
+          old_label: string | null
+          requested_at: string
+          active_from: string | null
+        }[]
+      }
+      remove_venue: {
+        Args: { p_venue_id: string }
+        Returns: undefined
+      }
+      remove_checkin: {
+        Args: { p_session_id: string; p_student_id: string; p_reason: string }
+        Returns: undefined
+      }
+      session_qr: {
+        Args: { p_session_id: string }
+        Returns: { token: string; expires_at: string }[]
+      }
+      session_roster: {
+        Args: { p_session_id: string }
+        Returns: {
+          student_id: string
+          full_name: string
+          school_number: string | null
+          has_app: boolean
+          checked_in_at: string | null
+          method: string | null
+          distance_m: number | null
+          reason: string | null
+        }[]
+      }
+      start_session: {
+        Args: {
+          p_course_run_id: string
+          p_minutes: number
+          p_starts_at?: string | null
+          p_venue_id?: string | null
+          p_lat?: number | null
+          p_lng?: number | null
+          p_accuracy?: number | null
+          p_radius_m?: number | null
+          p_reward_marks?: number
+          p_qr_required?: boolean
+          p_qr_seconds?: number
+        }
+        Returns: Database["public"]["Tables"]["attendance_sessions"]["Row"]
+      }
+      verify_venue: {
+        Args: { p_venue_id: string }
+        Returns: undefined
+      }
+      void_session: {
+        Args: { p_session_id: string; p_reason: string }
+        Returns: undefined
+      }
       account_deletion_effects: {
         Args: never
         Returns: {
@@ -1452,6 +1830,19 @@ export type Database = {
         }
         Returns: number
       }
+      school_venues: {
+        Args: { p_school_id: string }
+        Returns: {
+          id: string
+          name: string
+          latitude: number
+          longitude: number
+          radius_m: number
+          verified: boolean
+          added_by: string | null
+          mine: boolean
+        }[]
+      }
       school_by_code: {
         Args: {
           p_code: string
@@ -1511,6 +1902,11 @@ export type Database = {
         | "present"
         | "late"
         | "absent"
+      device_status:
+        | "active"
+        | "pending"
+        | "replaced"
+        | "cancelled"
       enrolment_status:
         | "active"
         | "removed"
@@ -1674,6 +2070,7 @@ export const Constants = {
     Enums: {
       academic_period_kind: ["term", "semester"],
       attendance_mark: ["present", "late", "absent"],
+      device_status: ["active", "pending", "replaced", "cancelled"],
       enrolment_status: ["active", "removed"],
       guardian_event_kind: ["guardian_added", "guardian_removed", "phone_changed", "alerts_on", "alerts_off"],
       member_status: ["pending", "active", "disabled"],

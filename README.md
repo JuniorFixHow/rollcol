@@ -103,6 +103,21 @@ If messages stay on "Waiting", open `/platform`: the **SMS sender** card says wh
 
 Keep the Sailup account topped up: if it runs out, messages fail and schools get their credits back. Only verified schools send SMS. Add SMS credits to a school from the platform page (`/platform`, SMS column).
 
+## Push notifications (Part 5)
+
+Students get push notifications on their phones (session open, 5 minutes left, present or missed). They go through the `send-push` Edge Function and Expo's push service.
+
+1. Deploy it: `pnpm exec supabase functions deploy send-push --no-verify-jwt`
+2. It uses the same `CRON_SECRET` as `send-sms`. Add its address in SQL Editor:
+   ```sql
+   insert into private.config (key, value) values
+     ('push_sender_url', 'https://YOUR-PROJECT-REF.supabase.co/functions/v1/send-push')
+   on conflict (key) do update set value = excluded.value;
+   ```
+3. Only if you turn on "enhanced push security" in your Expo account, add the secret `EXPO_ACCESS_TOKEN`.
+
+Phones register for notifications in the mobile app (Part 5b).
+
 ## Test data
 
 1. Open `supabase/test-data/load.sql` and set your own email (so you become admin of every test school) and your phone number (the only number test guardians use) at the top.

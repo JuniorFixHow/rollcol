@@ -288,6 +288,31 @@ begin
   select v_uni, cr.id, st.id
   from public.course_runs cr cross join public.students st
   where cr.school_id = v_uni and st.school_id = v_uni;
+
+  -- A venue (somewhere in Accra; change it to your own location on the Venues page to test check-in).
+  insert into public.venues (school_id, name, location, radius_m, verified_at)
+  values (v_uni, 'Main Lecture Hall', 'SRID=4326;POINT(-0.186964 5.650812)', 75, now());
+
+  -- Past sessions: NUR 101 on the last five weekdays, with most students checked in.
+  -- Marked as already notified, so loading test data sends no notifications.
+  for d in select g::date from generate_series(v_today - 7, v_today - 1, interval '1 day') g
+           where extract(isodow from g) < 6 loop
+    insert into public.attendance_sessions
+      (school_id, course_run_id, location, radius_m, venue_id, reward_marks, qr_required, starts_at, ends_at, started_by,
+       notified_open_at, notified_soon_at, notified_closed_at)
+    select v_uni, cr.id, v.location, v.radius_m, v.id, 1, true,
+           (d + time '09:00') at time zone 'Africa/Accra', (d + time '09:30') at time zone 'Africa/Accra', v_l1,
+           now(), now(), now()
+    from public.course_runs cr join public.courses c on c.id = cr.course_id
+    cross join public.venues v
+    where cr.school_id = v_uni and c.code = 'NUR 101' and v.school_id = v_uni
+    returning id into v_reg;
+    insert into public.session_checkins (session_id, student_id, school_id, method, checked_in_at, distance_m, accuracy_m)
+    select v_reg, st.id, v_uni, 'self', (d + time '09:05') at time zone 'Africa/Accra',
+           round((pg_temp.roll(st.id::text || d::text) * 0.5)::numeric, 1), 12
+    from public.students st
+    where st.school_id = v_uni and pg_temp.roll(st.id::text || d::text) < 85;
+  end loop;
 end;
 $$;
 

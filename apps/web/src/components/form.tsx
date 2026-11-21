@@ -1,6 +1,16 @@
 "use client";
 
-import { createContext, type ReactNode, use, useActionState, useEffect, useId, useRef, useState } from "react";
+import {
+  createContext,
+  type ReactNode,
+  use,
+  useActionState,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { useFormStatus } from "react-dom";
 import { useConfirm } from "@/components/confirm-dialog";
 import { buttonClass, inputClass } from "@/components/ui";
@@ -25,12 +35,13 @@ export function ActionForm({
   className?: string;
   resetOnSuccess?: boolean;
 }) {
-  const [state, formAction] = useActionState(action, initialFormState);
+  const [rawState, formAction] = useActionState(action, initialFormState);
+  const state = useFreshState(rawState);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
-    if (resetOnSuccess && state.status === "success") formRef.current?.reset();
-  }, [resetOnSuccess, state]);
+    if (resetOnSuccess && rawState.status === "success") formRef.current?.reset();
+  }, [resetOnSuccess, rawState]);
 
   return (
     <FormStateContext value={state}>
@@ -39,6 +50,26 @@ export function ActionForm({
       </form>
     </FormStateContext>
   );
+}
+
+/**
+ * Next.js keeps pages you leave alive in the background, so a form's last
+ * message would still be showing when you come back. This hides the message
+ * and field errors from before you left (typed values stay).
+ */
+export function useFreshState(state: FormState): FormState {
+  const latest = useRef(state);
+  const [stale, setStale] = useState<FormState | null>(null);
+
+  useEffect(() => {
+    latest.current = state;
+  }, [state]);
+
+  // The clean-up runs when the page is hidden (navigated away from) or removed.
+  useEffect(() => () => setStale(latest.current), []);
+
+  if (state !== stale || state.status === "idle") return state;
+  return { status: "idle", values: state.values };
 }
 
 export function FormMessage() {
@@ -297,14 +328,96 @@ export function CheckboxField({
   description?: string;
   defaultChecked?: boolean;
 }) {
+  const state = use(FormStateContext);
+  const error = state.fieldErrors?.[name];
+  // After a save, keep what was submitted (an unticked box is not sent at all).
+  const checked = state.values ? state.values[name] === "on" : Boolean(defaultChecked);
   return (
-    <label className="flex cursor-pointer gap-3 text-sm">
-      <input type="checkbox" name={name} defaultChecked={defaultChecked} className="mt-0.5 size-4 accent-accent" />
-      <span>
-        <span className="block font-medium">{label}</span>
-        {description ? <span className="block text-xs text-muted">{description}</span> : null}
-      </span>
-    </label>
+    <div>
+      <label className="flex cursor-pointer gap-3 text-sm">
+        <input
+          key={String(checked)}
+          type="checkbox"
+          name={name}
+          defaultChecked={checked}
+          aria-invalid={error ? true : undefined}
+          className="mt-0.5 size-4 accent-accent"
+        />
+        <span>
+          <span className="block font-medium">{label}</span>
+          {description ? <span className="block text-xs text-muted">{description}</span> : null}
+        </span>
+      </label>
+      {error ? <p className="mt-1 ml-7 text-xs text-danger">{error}</p> : null}
+    </div>
+  );
+}
+
+/**
+ * Shows (or enables) its fields only while another field in the same form has
+ * a given value: a radio or select (`equals`), or a checkbox (`checked`).
+ * Hidden or disabled fields are not sent with the form.
+ */
+export function DependsOn({
+  field,
+  equals,
+  checked,
+  initially,
+  mode = "hide",
+  children,
+}: {
+  field: string;
+  equals?: string;
+  checked?: boolean;
+  /** Whether it starts shown, before the page is interactive. */
+  initially: boolean;
+  mode?: "hide" | "disable";
+  children: ReactNode;
+}) {
+  const ref = useRef<HTMLFieldSetElement>(null);
+
+  const read = () => {
+    const form = ref.current?.form ?? ref.current?.closest("form");
+    if (!form) return initially;
+    const control = form.elements.namedItem(field);
+    if (control instanceof HTMLInputElement && control.type === "checkbox") {
+      return control.checked === (checked ?? true);
+    }
+    if (control instanceof RadioNodeList || control instanceof HTMLSelectElement || control instanceof HTMLInputElement) {
+      return control.value === equals;
+    }
+    return initially;
+  };
+
+  const active = useSyncExternalStore(
+    (notify) => {
+      const form = ref.current?.form ?? ref.current?.closest("form");
+      if (!form) return () => undefined;
+      // A form reset updates the fields after the event, so check again a moment later.
+      const onReset = () => setTimeout(notify, 0);
+      form.addEventListener("change", notify);
+      form.addEventListener("input", notify);
+      form.addEventListener("reset", onReset);
+      notify();
+      return () => {
+        form.removeEventListener("change", notify);
+        form.removeEventListener("input", notify);
+        form.removeEventListener("reset", onReset);
+      };
+    },
+    read,
+    () => initially,
+  );
+
+  return (
+    <fieldset
+      ref={ref}
+      disabled={!active}
+      hidden={mode === "hide" && !active}
+      className={`contents ${mode === "disable" && !active ? "[&_*]:opacity-60" : ""}`}
+    >
+      {children}
+    </fieldset>
   );
 }
 
@@ -348,7 +461,8 @@ export function InlineAction({
   confirm?: string;
   hidden?: Record<string, string>;
 }) {
-  const [state, formAction] = useActionState(action, initialFormState);
+  const [rawState, formAction] = useActionState(action, initialFormState);
+  const state = useFreshState(rawState);
   const [ask, dialog] = useConfirm();
   const confirmed = useRef(false);
 

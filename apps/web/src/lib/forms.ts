@@ -36,7 +36,11 @@ export function invalid(error: ZodError, values?: Record<string, string>): FormS
   const formMessage = error.issues.find((issue) => issue.path.length === 0)?.message;
   return {
     status: "error",
-    message: formMessage ?? "Check the highlighted fields.",
+    message:
+      formMessage ??
+      (Object.keys(fieldErrors).length === 1
+        ? "One field needs attention: see the message in red above."
+        : "Some fields need attention: see the messages in red above."),
     fieldErrors,
     values: withoutPasswords,
   };

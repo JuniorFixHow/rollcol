@@ -82,7 +82,14 @@ export const batchSchema = z.object({
     .string()
     .trim()
     .transform((value) => (value === "" ? null : Number(value)))
-    .pipe(z.number().int().min(1990).max(2200).nullable()),
+    .pipe(
+      z
+        .number({ message: "Enter a year, for example 2025." })
+        .int("Enter a year, for example 2025.")
+        .min(1990, "Enter a year from 1990.")
+        .refine((year) => year <= new Date().getFullYear() + 1, "That year has not come yet.")
+        .nullable(),
+    ),
 });
 
 export const courseSchema = z.object({

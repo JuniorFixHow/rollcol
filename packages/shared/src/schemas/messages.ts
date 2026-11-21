@@ -21,12 +21,18 @@ export const smsSettingsSchema = z
   smsAbsenceAlerts: z.boolean(),
   smsPresentAlerts: z.boolean(),
   quietHours: z.boolean(),
-  quietStart: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Choose a time."),
-  quietEnd: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Choose a time."),
+  /** Only sent while quiet hours are on; otherwise the saved times are kept. */
+  quietStart: z.string().optional(),
+  quietEnd: z.string().optional(),
 })
-  .refine((value) => value.quietStart !== value.quietEnd, {
-    message: "Start and end must be different times.",
-    path: ["quietEnd"],
+  .superRefine((value, context) => {
+    if (!value.quietHours) return;
+    const time = /^([01]\d|2[0-3]):[0-5]\d$/;
+    if (!time.test(value.quietStart ?? "")) context.addIssue({ code: "custom", path: ["quietStart"], message: "Choose a time." });
+    if (!time.test(value.quietEnd ?? "")) context.addIssue({ code: "custom", path: ["quietEnd"], message: "Choose a time." });
+    if (value.quietStart && value.quietStart === value.quietEnd) {
+      context.addIssue({ code: "custom", path: ["quietEnd"], message: "Start and end must be different times." });
+    }
   });
 export type SmsSettingsInput = z.infer<typeof smsSettingsSchema>;
 

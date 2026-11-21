@@ -4,6 +4,7 @@ import { MAX_MESSAGE_SEGMENTS, messageCost } from "@rollcol/shared";
 import { useActionState, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { useConfirm } from "@/components/confirm-dialog";
+import { useFreshState } from "@/components/form";
 import { buttonClass, inputClass } from "@/components/ui";
 import { type FormState, initialFormState } from "@/lib/forms";
 
@@ -47,7 +48,8 @@ export function MessageComposer({
   /** The school's quiet hours in words, or null when it has none. */
   quietNote?: string | null;
 }) {
-  const [state, formAction] = useActionState(action, initialFormState);
+  const [rawState, formAction] = useActionState(action, initialFormState);
+  const state = useFreshState(rawState);
   const [ask, dialog] = useConfirm();
   const confirmed = useRef(false);
   const formRef = useRef<HTMLFormElement>(null);
@@ -56,7 +58,7 @@ export function MessageComposer({
   const [chosen, setChosen] = useState<string[]>([]);
 
   useEffect(() => {
-    if (state.status === "success") {
+    if (rawState.status === "success") {
       formRef.current?.reset();
       // Clear the composer after a send; the form state change is the external event.
       queueMicrotask(() => {
@@ -64,7 +66,7 @@ export function MessageComposer({
         setChosen([]);
       });
     }
-  }, [state]);
+  }, [rawState]);
 
   const reach = useMemo(() => {
     if (recipients !== undefined) return recipients;

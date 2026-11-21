@@ -7,6 +7,7 @@ export * from "./schemas/messages";
 export * from "./schemas/records";
 export * from "./schemas/registers";
 export * from "./schemas/school";
+export * from "./schemas/sessions";
 export * from "./sms/gsm";
 export type { Database, Enums, Json, Tables, TablesInsert, TablesUpdate } from "./database.types";
 export { Constants as DatabaseConstants } from "./database.types";

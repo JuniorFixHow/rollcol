@@ -5,7 +5,7 @@ import { ActionForm, FieldButton, FormMessage, InlineAction, SelectField, Submit
 import { Badge, Card, EmptyState, PageHeader, Table, Td } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
 import { listTeachers } from "@/lib/queries";
-import { addBatch, addCourse, addCourseRun, addLecturer, addProgramme, removeLecturer, removeRecord } from "./actions";
+import { addCourse, addCourseRun, addLecturer, removeLecturer, removeRecord } from "./actions";
 
 export const metadata: Metadata = { title: "Courses" };
 
@@ -30,7 +30,7 @@ export default async function CoursesPage({ searchParams }: PageProps<"/dashboar
     (semesters ?? []).find((s) => s.starts_on <= today && today <= s.ends_on) ??
     (semesters ?? [])[0];
 
-  const [runsResult, { data: courses }, { data: programmes }, { data: batches }, lecturers] = await Promise.all([
+  const [runsResult, { data: courses }, lecturers] = await Promise.all([
     semester
       ? supabase
           .from("course_runs")
@@ -40,8 +40,6 @@ export default async function CoursesPage({ searchParams }: PageProps<"/dashboar
           .eq("academic_period_id", semester.id)
       : Promise.resolve({ data: [] }),
     supabase.from("courses").select("id, code, title, source").eq("school_id", school.id).order("code"),
-    supabase.from("programmes").select("id, name, code, source").eq("school_id", school.id).order("name"),
-    supabase.from("batches").select("id, name, programme_id, entry_year, source").eq("school_id", school.id).order("name"),
     isAdmin ? listTeachers(supabase, school.id) : Promise.resolve([]),
   ]);
 
@@ -213,59 +211,6 @@ export default async function CoursesPage({ searchParams }: PageProps<"/dashboar
               </ActionForm>
             </Card>
 
-            <Card title="Programmes and batches" description="Optional. Used to group students, for example BSc Nursing, 2025 intake.">
-              {(programmes ?? []).length > 0 ? (
-                <ul className="mb-4 space-y-3">
-                  {(programmes ?? []).map((programme) => (
-                    <li key={programme.id} className="rounded-md border border-line p-3 text-sm">
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="font-medium">
-                          {programme.name}
-                          {programme.code ? <span className="ml-2 font-mono text-xs text-muted">{programme.code}</span> : null}
-                        </span>
-                        {programme.source === "rollcol" ? (
-                          <InlineAction
-                            action={removeRecord}
-                            hidden={{ table: "programmes", id: programme.id }}
-                            label="Remove"
-                            variant="ghost"
-                            confirm={`Remove ${programme.name} and its batches?`}
-                          />
-                        ) : null}
-                      </div>
-                      <p className="mt-1 text-muted">
-                        {(batches ?? [])
-                          .filter((b) => b.programme_id === programme.id)
-                          .map((b) => b.name)
-                          .join(", ") || "No batches yet"}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-              <div className="grid gap-6 lg:grid-cols-2">
-                <ActionForm action={addProgramme} resetOnSuccess>
-                  <TextField name="name" label="Programme" placeholder="BSc Nursing" />
-                  <TextField name="code" label="Code (optional)" autoCapitalize="characters" />
-                  <FormMessage />
-                  <SubmitButton variant="secondary">Add programme</SubmitButton>
-                </ActionForm>
-                {(programmes ?? []).length > 0 ? (
-                  <ActionForm action={addBatch} resetOnSuccess>
-                    <SelectField
-                      name="programmeId"
-                      label="Programme"
-                      placeholder="Choose a programme"
-                      options={(programmes ?? []).map((p) => ({ value: p.id, label: p.name }))}
-                    />
-                    <TextField name="name" label="Batch" placeholder="2025 intake" />
-                    <TextField name="entryYear" label="Entry year (optional)" type="number" inputMode="numeric" />
-                    <FormMessage />
-                    <SubmitButton variant="secondary">Add batch</SubmitButton>
-                  </ActionForm>
-                ) : null}
-              </div>
-            </Card>
           </>
         ) : null}
       </div>

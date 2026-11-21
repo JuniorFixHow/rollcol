@@ -39,13 +39,19 @@ async function Sidebar() {
   const tertiary = school.type === "tertiary";
 
   const items: NavItem[] = [{ href: "/dashboard", label: "Overview" }];
-  if (!tertiary) items.push({ href: "/dashboard/registers", label: "Registers" });
+  items.push(tertiary ? { href: "/dashboard/sessions", label: "Sessions" } : { href: "/dashboard/registers", label: "Registers" });
+  if (tertiary) items.push({ href: "/dashboard/venues", label: "Venues" });
   items.push({ href: "/dashboard/students", label: "Students" });
   items.push(tertiary ? { href: "/dashboard/courses", label: "Courses" } : { href: "/dashboard/classes", label: "Classes" });
   if (!tertiary) items.push({ href: "/dashboard/messages", label: "Messages" });
   if (isAdmin) {
     items.push({ href: "/dashboard/calendar", label: `${periodWordTitle(school.type)}s` });
     items.push({ href: "/dashboard/staff", label: "Staff" });
+    if (tertiary) {
+      items.push({ href: "/dashboard/programmes", label: "Programmes" });
+      items.push({ href: "/dashboard/batches", label: "Batches" });
+      items.push({ href: "/dashboard/phones", label: "Phones" });
+    }
     items.push({ href: "/dashboard/settings", label: "Settings" });
   }
   items.push({ href: "/dashboard/account", label: "Your account" });

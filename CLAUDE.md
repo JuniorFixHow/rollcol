@@ -74,11 +74,20 @@ Add mobile packages with `npx expo install <pkg>` from `apps/mobile`, never `pnp
 - Reward marks accumulate per course per semester. Lecturer can void a session or manually add a student, always with a logged reason.
 - Live check-in count for the lecturer via Supabase Realtime.
 
+- Implementation (migration `20261122000000_sessions.sql`): `venues` (PostGIS point and radius), `attendance_sessions` (one at a time per course run, exclusion constraint; `qr_secret` is never granted to apps), `session_checkins` (primary key session and student; unique session and device), `session_adjustments` (every manual change with a reason). Functions: `start_session`, `end_session` (removes a session that has not started), `void_session`, `check_in`, `add_checkin_manually`, `remove_checkin`, `session_roster`, `session_qr`, `my_open_sessions`, `school_venues`.
+- Distance: within the radius after allowing up to 50 metres of the phone's stated accuracy; accuracy worse than 100 metres is refused. Corrections allowed for 14 days after a session ends.
+- QR payload: `rollcol:checkin:{session id}:{12 hex token}` (`sessionQrPayload` and `parseSessionQr` in shared). Token: first 12 hex characters of HMAC-SHA256(window number, session secret), window = 15 seconds.
+- Push: `push_outbox` and the `send-push` Edge Function (Expo push service), woken every minute by `private.run_push_pipeline` (config key `push_sender_url`). Session opened, 5 minutes left (sessions over 10 minutes), present or missed at close, cancelled, manual add or removal, new phone warnings.
+
+- Rules (migration `20261122010000_session_rules.sql`): the rotating code changes every `qr_seconds` (10 to 60, default 15), chosen per session. A student's own check-in (method `self`) can only be removed by an admin unless the school turns on `lecturers_remove_self_checkins` (default off). After a session ends, only admins change attendance unless `lecturers_add_after_end` is on (default off); manual additions while open are always allowed with a reason. Admins can correct up to 14 days after a session.
+- Venues: lecturers add venues when `lecturers_add_venues` is on (default on) through `add_venue`; theirs are unverified until an admin calls `verify_venue`, but usable at once. Names are unique per school ignoring case and extra spaces. `remove_venue`: admins any, lecturers only their own unverified ones. The web session form also offers "My current location" (browser location, must be within 100 metres accuracy) and "No location check" (requires the rotating code).
+
 ### Device binding
 - Each student account is bound to one device (secret in `expo-secure-store`, registered server side).
 - New device: active automatically after a **48 hour cooldown**, or immediately if an **admin** approves. Lecturers cannot approve. Maximum **2 changes per semester**, after that admin only.
 - The old device gets a push warning when the account signs in on a new phone.
 - During a cooldown, a lecturer can manually add the student to a session (logged reason).
+- Implementation: `devices` keyed by account (`user_id`), `secret_hash` is SHA-256 of a random secret in `expo-secure-store`. `register_device` at sign-in; `activate_due_devices` runs every minute and at check-in; admins use `pending_device_changes` and `approve_device` (web Phones page). Changes counted from the start of the current semester (cancelled requests excluded).
 - Later: Apple App Attest and Google Play Integrity.
 
 ### Non-tertiary registers
@@ -121,8 +130,15 @@ Add mobile packages with `npx expo install <pkg>` from `apps/mobile`, never `pnp
 2. **Schema, RLS and auth** (done): schools, staff and roles, programmes, batches, courses, runs, enrolments, classes, students, guardians and links, settings. School sign-up and verification. School ID sign-in.
 3. **Non-tertiary registers** (done): daily and per-period marking on web and mobile, offline sync, auto close, term totals on the class page. Also: logo and icons, light and dark themes with a manual choice, privacy policy, aligned form fields.
 4. **SMS outbox** (done, except the admin's daily summary of delegated changes): alerts, grace period, combining, quiet hours, opt-outs, guardian system messages, broadcasts and custom messages, credits, Messages page.
-5. **Tertiary sessions:** check-in function, location and venues, device binding and changes, biometrics, rotating QR, push notifications, live count.
+5. **Tertiary sessions:** 5a (done): database, check-in function, venues, device binding and approvals, rotating QR, push queue and sender, web sessions with live count. 5b: mobile check-in (location, biometrics, QR scan), phone binding, push tokens, lecturer sessions from the app.
 6. **Records, marks and reports** on web and mobile; exports; GES (Ghana Education Service) register export.
 7. **Billing:** Paystack plans, trials, SMS credits and top-ups (web only).
 8. **Stediis link:** sync API, webhooks, "Continue with Stediis".
 9. **Launch preparation:** public pages, in-app help, onboarding screens, permission strings, store listings, replace all test settings and secrets.
+
+
+## Web form conventions
+
+- `DependsOn` (components/form.tsx) shows or enables fields only while another field has a value (start time only for "Later", quiet hours times only when quiet hours are on). Hidden or disabled fields are not submitted, so actions treat them as optional.
+- `CheckboxField` keeps the submitted value and shows its error after a failed save.
+- `useFreshState` clears a form's message when its page is left (Next.js keeps left pages alive), so old messages never greet you on return.
