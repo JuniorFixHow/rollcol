@@ -23,11 +23,24 @@ export default function TodayScreen() {
   return <TeacherToday member={member} refreshSession={refresh} />;
 }
 
+const TITLES = /^(mr|mrs|ms|miss|dr|prof|professor|rev|revd|pastor|sir|madam|lt|col|capt|maj|gen|sgt|hon|nana|togbe)\.?$/i;
+
+/** "Abena" for a student; "Mr. Ocran" when the name starts with a title. */
+function greetingName(fullName: string): string {
+  const words = fullName.trim().split(/\s+/);
+  const first = words[0] ?? "";
+  if (TITLES.test(first) && words.length > 1) {
+    const titles = words.filter((word, index) => index < words.length - 1 && TITLES.test(word));
+    return `${titles.join(" ")} ${words[words.length - 1]}`;
+  }
+  return first;
+}
+
 function Greeting({ member }: { member: SchoolMember }) {
   const role = member.kind === "student" ? "Student" : staffRoleLabel(member.role, member.school.type);
   return (
     <View style={styles.header}>
-      <Title>Hello, {member.fullName.split(" ")[0]}</Title>
+      <Title>Hello, {greetingName(member.fullName)}</Title>
       <Body muted>
         {member.school.name} · {role} · {member.schoolNumber}
       </Body>

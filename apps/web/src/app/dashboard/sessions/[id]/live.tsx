@@ -1,6 +1,6 @@
 "use client";
 
-import { sessionQrPayload } from "@rollcol/shared";
+import { SITE_URL, sessionQrPayload } from "@rollcol/shared";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { renderSVG } from "uqr";
@@ -89,7 +89,7 @@ export function RotatingQr({ sessionId }: { sessionId: string }) {
       setFailed(false);
       const expiresAt = new Date(result.expiresAt).getTime();
       setQr({
-        svg: renderSVG(sessionQrPayload(sessionId, result.token), { border: 2, ecc: "M" }),
+        svg: renderSVG(sessionQrPayload(SITE_URL, sessionId, result.token), { border: 2, ecc: "M" }),
         expiresAt,
       });
       // Fetch the next code just after this one expires (a little early is fine: the old code still works).

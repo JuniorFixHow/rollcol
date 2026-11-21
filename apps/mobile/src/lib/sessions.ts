@@ -5,6 +5,8 @@ import { supabase } from "./supabase";
 
 export type OpenSession = Database["public"]["Functions"]["my_open_sessions"]["Returns"][number];
 
+let channelCount = 0;
+
 /**
  * Reloads when the screen comes into view, when a session in the school is
  * added or changed (live), and at the moment the next session opens or closes.
@@ -22,8 +24,10 @@ function useLiveReload(load: () => Promise<void>, schoolId: string, times: strin
   );
 
   useEffect(() => {
+    // Each screen needs its own channel: two tabs can watch the same school.
+    channelCount += 1;
     const channel = supabase
-      .channel(`${channelName}-${schoolId}`)
+      .channel(`${channelName}-${schoolId}-${channelCount}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "attendance_sessions", filter: `school_id=eq.${schoolId}` },

@@ -9,6 +9,7 @@ import { usePalette } from "@/components/theme";
 import { Body, Message } from "@/components/ui";
 import { formatDayTime } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
+import { refreshUnreadBadge } from "@/lib/unread";
 
 interface Item {
   id: number;
@@ -45,7 +46,10 @@ export default function NotificationsScreen() {
     if (error) return;
     setItems(data ?? []);
     // Seen: clear the unread badge (they stay in the list until swiped away).
-    if ((data ?? []).some((item) => item.read_at === null)) await supabase.rpc("mark_notifications_read", { p_ids: null });
+    if ((data ?? []).some((item) => item.read_at === null)) {
+      await supabase.rpc("mark_notifications_read", { p_ids: null });
+      refreshUnreadBadge();
+    }
   }, []);
 
   useFocusEffect(
@@ -57,6 +61,7 @@ export default function NotificationsScreen() {
   async function dismiss(ids: number[] | null) {
     setItems((current) => (ids === null ? [] : current.filter((item) => !ids.includes(item.id))));
     await supabase.rpc("dismiss_notifications", { p_ids: ids });
+    refreshUnreadBadge();
   }
 
   return (

@@ -1,4 +1,4 @@
-import { parseSessionQr } from "@rollcol/shared";
+import { describeDatabaseError, parseSessionQr } from "@rollcol/shared";
 import { Ionicons } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as Haptics from "expo-haptics";
@@ -23,13 +23,17 @@ type Step =
   | { kind: "failed"; message: string; settings?: boolean };
 
 export default function CheckInScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // "t" is the code when the check-in link was opened from a camera or QR app.
+  const { id, t } = useLocalSearchParams<{ id: string; t?: string }>();
   const palette = usePalette();
   const [session, setSession] = useState<OpenSession | null>(null);
   const [step, setStep] = useState<Step>({ kind: "loading" });
   const [camera, requestCamera] = useCameraPermissions();
   const scanned = useRef(false);
   const started = useRef(false);
+  // A pass from claim_qr: the scanned code, checked straight away so it cannot
+  // expire during Face ID and finding the location.
+  const pass = useRef<string | null>(null);
 
   const submit = useCallback(
     async (position: Position | null, qrToken: string | null) => {
@@ -66,7 +70,12 @@ export default function CheckInScreen() {
         }
         position = found.value;
       }
-      // 3. The code on the lecturer's screen, scanned last so it is fresh.
+      // 3. The code on the lecturer's screen, scanned last so it is fresh
+      //    (unless it came with the link and was claimed already).
+      if (current.qr_required && pass.current) {
+        await submit(position, pass.current);
+        return;
+      }
       if (current.qr_required) {
         scanned.current = false;
         setStep({ kind: "scanning", position });
@@ -88,6 +97,18 @@ export default function CheckInScreen() {
         return;
       }
       setSession(current);
+      if (current.qr_required && !current.checked_in_at && typeof t === "string" && /^[0-9a-f]{12}$/i.test(t)) {
+        setStep({ kind: "sending" });
+        const { data: claimed, error: claimError } = await supabase.rpc("claim_qr", { p_session_id: id, p_token: t });
+        if (claimError || !claimed) {
+          setStep({
+            kind: "failed",
+            message: claimError ? describeDatabaseError(claimError) : "That code could not be used. Scan it again.",
+          });
+          return;
+        }
+        pass.current = claimed;
+      }
       if (current.checked_in_at) {
         setStep({
           kind: "failed",
@@ -97,7 +118,7 @@ export default function CheckInScreen() {
       }
       await run(current);
     })();
-  }, [id, run]);
+  }, [id, run, t]);
 
   const onScan = useCallback(
     (data: string, position: Position | null) => {
@@ -173,7 +194,16 @@ export default function CheckInScreen() {
               <Ionicons name="alert-circle-outline" size={56} color={palette.danger} />
               <Message>{step.message}</Message>
               {step.settings ? <Button label="Open Settings" variant="secondary" onPress={() => void Linking.openSettings()} /> : null}
-              {session && !session.checked_in_at ? <Button label="Try again" onPress={() => void run(session)} /> : null}
+              {session && !session.checked_in_at ? (
+                <Button
+                  label="Try again"
+                  onPress={() => {
+                    // A used or expired pass is not reused: scan again in the app.
+                    pass.current = null;
+                    void run(session);
+                  }}
+                />
+              ) : null}
               <Button label="Close" variant="secondary" onPress={() => router.back()} />
             </>
           ) : (

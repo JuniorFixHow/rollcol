@@ -1,8 +1,9 @@
-import { type Database, describeDatabaseError, sessionQrPayload, sessionState } from "@rollcol/shared";
+import { type Database, SITE_URL, describeDatabaseError, sessionQrPayload, sessionState } from "@rollcol/shared";
 import { useKeepAwake } from "expo-keep-awake";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { SvgXml } from "react-native-svg";
 import { renderSVG } from "uqr";
 import { ConfirmDialog, ReasonDialog } from "@/components/dialog";
@@ -53,7 +54,7 @@ function LiveCode({ sessionId }: { sessionId: string }) {
         timer = setTimeout(load, 5000);
         return;
       }
-      setSvg(renderSVG(sessionQrPayload(sessionId, row.token), { border: 2, ecc: "M" }));
+      setSvg(renderSVG(sessionQrPayload(SITE_URL, sessionId, row.token), { border: 2, ecc: "M" }));
       timer = setTimeout(load, Math.max(1000, new Date(row.expires_at).getTime() - Date.now() + 300));
     };
     void load();
@@ -84,6 +85,7 @@ export default function SessionScreen() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [, setTick] = useState(0);
+  const [query, setQuery] = useState("");
   const schoolId = member && member.kind !== "none" ? member.school.id : "";
   const isAdmin = member?.kind === "staff" && member.role === "admin";
 
@@ -132,7 +134,7 @@ export default function SessionScreen() {
       }, 1000);
     };
     const channel = supabase
-      .channel(`session-${id}`)
+      .channel(`session-${id}-${Date.now()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "session_checkins", filter: `session_id=eq.${id}` }, soon)
       .subscribe();
     // The countdown, and opening or closing on time.
@@ -200,12 +202,20 @@ export default function SessionScreen() {
   const withinWindow = new Date(session.ends_at).getTime() > Date.now() - 14 * 24 * 60 * 60 * 1000;
   const correctable = state === "open" || (state === "ended" && canChangeAfterEnd && withinWindow);
   const course = session.course_run?.course;
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const shown = words.length === 0
+    ? roster
+    : roster.filter((row) => {
+        const text = `${row.full_name} ${row.school_number ?? ""}`.toLowerCase();
+        return words.every((word) => text.includes(word));
+      });
 
   return (
     <>
       <Stack.Screen options={{ title: course?.code ?? "Session" }} />
       <FlatList
-        data={roster}
+        data={shown}
+        keyboardShouldPersistTaps="handled"
         keyExtractor={(row) => row.student_id}
         contentContainerStyle={styles.content}
         refreshControl={
@@ -277,6 +287,22 @@ export default function SessionScreen() {
             ) : null}
             {!canRemoveSelf && (state === "open" || state === "ended") ? (
               <Body muted>Students who checked in themselves can only be removed by an admin.</Body>
+            ) : null}
+            <View style={[styles.search, { borderColor: palette.line, backgroundColor: palette.surface }]}>
+              <Ionicons name="search" size={18} color={palette.muted} />
+              <TextInput
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Search by name or school ID"
+                placeholderTextColor={palette.muted}
+                autoCorrect={false}
+                clearButtonMode="while-editing"
+                returnKeyType="search"
+                style={[styles.searchInput, { color: palette.text }]}
+              />
+            </View>
+            {words.length > 0 ? (
+              <Body muted>{shown.length === 0 ? `Nothing matches "${query.trim()}".` : `Showing ${shown.length} of ${roster.length}.`}</Body>
             ) : null}
           </View>
         }
@@ -371,4 +397,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: 10, borderWidth: StyleSheet.hairlineWidth, borderRadius: 12, padding: 12 },
   name: { fontSize: 16, fontWeight: "600" },
   rowAction: { fontSize: 15, fontWeight: "600", paddingLeft: 4 },
+  search: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: StyleSheet.hairlineWidth, borderRadius: 10, paddingHorizontal: 12 },
+  searchInput: { flex: 1, fontSize: 16, paddingVertical: 10 },
 });

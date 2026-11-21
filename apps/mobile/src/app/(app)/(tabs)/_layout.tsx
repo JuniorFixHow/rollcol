@@ -7,6 +7,7 @@ import { usePalette } from "@/components/theme";
 import { Logo } from "@/components/ui";
 import { useSession } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
+import { onUnreadChange } from "@/lib/unread";
 
 /** The RollCol mark and name, as on the website. */
 function HeaderBrand() {
@@ -39,9 +40,11 @@ function useUnreadCount(enabled: boolean): number {
   useEffect(() => {
     if (!enabled) return;
     const subscription = Notifications.addNotificationReceivedListener(() => void load());
+    const stop = onUnreadChange(() => void load());
     const timer = setInterval(() => void load(), 60000);
     return () => {
       subscription.remove();
+      stop();
       clearInterval(timer);
     };
   }, [enabled, load]);

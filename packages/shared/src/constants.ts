@@ -71,8 +71,17 @@ export const SIGN_IN_LOCK = { maxFailures: 10, windowMinutes: 15 } as const;
 export const PASSWORD_MIN_LENGTH = 8;
 
 /** Placeholder until launch (build plan step 9). */
-export const SUPPORT_EMAIL = "support@rollcol.com";
+export const SUPPORT_EMAIL = "support@rollcol.app";
 
 /** Apple's standard EULA is the Terms of Use on iOS. */
 export const APPLE_STANDARD_EULA_URL =
   "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
+
+/**
+ * The public website. Check-in codes link here, so any camera or QR app can
+ * open them. Change at launch when RollCol has its own domain.
+ */
+export const SITE_URL = "https://rollcol.vercel.app";
+
+/** The app's own link scheme (app.json "scheme"). */
+export const APP_SCHEME = "rollcol";

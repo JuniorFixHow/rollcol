@@ -94,14 +94,28 @@ export const sessionReasonSchema = z
   .min(3, "Give a reason.")
   .max(300, "Keep the reason under 300 characters.");
 
-/** What is shown inside the rotating QR code. The app reads the session and the current token from it. */
-export function sessionQrPayload(sessionId: string, token: string): string {
-  return `rollcol:checkin:${sessionId}:${token}`;
+/**
+ * What is inside the rotating QR code: a web link, so any camera or QR app
+ * opens it. The web page hands over to the RollCol app.
+ */
+export function sessionQrPayload(siteUrl: string, sessionId: string, token: string): string {
+  return `${siteUrl.replace(/\/+$/, "")}/checkin/${sessionId}?t=${token}`;
 }
 
+/** The link that opens the check-in screen in the RollCol app. */
+export function appCheckinLink(sessionId: string, token: string): string {
+  return `rollcol://checkin/${sessionId}?t=${token}`;
+}
+
+/**
+ * Reads a scanned code: the web link, the app link, or the older
+ * "rollcol:checkin:<session>:<token>" codes.
+ */
 export function parseSessionQr(text: string): { sessionId: string; token: string } | null {
-  const match = /^rollcol:checkin:([0-9a-f-]{36}):([0-9a-f]{12})$/i.exec(text.trim());
-  const [, sessionId, token] = match ?? [];
+  const value = text.trim();
+  const link = /\/checkin\/([0-9a-f-]{36})\?(?:.*&)?t=([0-9a-f]{12})(?:&|$)/i.exec(value);
+  const old = /^rollcol:checkin:([0-9a-f-]{36}):([0-9a-f]{12})$/i.exec(value);
+  const [, sessionId, token] = link ?? old ?? [];
   return sessionId && token ? { sessionId: sessionId.toLowerCase(), token: token.toLowerCase() } : null;
 }
 

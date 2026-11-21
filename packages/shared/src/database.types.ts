@@ -1784,6 +1784,10 @@ export type Database = {
         Args: { p_school_id: string; p_body: string; p_class_ids?: string[] | null }
         Returns: { recipients: number; segments: number; credits: number; balance: number }[]
       }
+      claim_qr: {
+        Args: { p_session_id: string; p_token: string }
+        Returns: string
+      }
       class_attendance_summary: {
         Args: {
           p_class_id: string

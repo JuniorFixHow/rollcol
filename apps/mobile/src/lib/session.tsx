@@ -82,8 +82,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     const { data } = await supabase.auth.getSession();
-    setSession(data.session);
     if (!data.session) {
+      setSession(null);
       setMemberships([]);
       setMember(null);
       return;
@@ -104,11 +104,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       }
       if (signInCode) await AsyncStorage.removeItem(SIGN_IN_SCHOOL_CODE_KEY);
 
+      // Session and schools change together, so a new sign-in never shows the
+      // join screen for a moment before the schools have loaded.
       setMemberships(result.memberships);
       setMember(chooseMember(result.memberships, result.isPlatformAdmin, { preferredSchoolId }));
       setJoinError(result.joinError);
+      setSession(data.session);
     } catch {
       // Offline or a server problem: keep what we had rather than signing out.
+      setSession(data.session);
     }
   }, []);
 
