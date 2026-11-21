@@ -1,39 +1,34 @@
 import { Stack } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
 import { usePalette } from "@/components/theme";
-import { Logo } from "@/components/ui";
-
-/** The RollCol mark and name, as on the website. */
-function HeaderBrand() {
-  const palette = usePalette();
-  return (
-    <View style={styles.brand} accessibilityRole="header" accessibilityLabel="RollCol">
-      <Logo size={26} />
-      <Text style={[styles.brandText, { color: palette.text }]}>RollCol</Text>
-    </View>
-  );
-}
+import { PhoneProvider } from "@/lib/phone";
+import { useSession } from "@/lib/session";
 
 export default function AppLayout() {
   const palette = usePalette();
+  const { memberships } = useSession();
+  // Students register their phone (check-in binding) and notifications.
+  const isStudent = memberships.some((m) => m.kind === "student");
+
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: { backgroundColor: palette.surface },
-        headerTintColor: palette.text,
-        contentStyle: { backgroundColor: palette.background },
-      }}
-    >
-      <Stack.Screen name="index" options={{ title: "RollCol", headerTitle: () => <HeaderBrand /> }} />
-      <Stack.Screen name="account" options={{ title: "Your account" }} />
-      <Stack.Screen name="schools" options={{ title: "Your schools" }} />
-      <Stack.Screen name="register/start" options={{ title: "Take register" }} />
-      <Stack.Screen name="register/[id]" options={{ title: "Register" }} />
-    </Stack>
+    <PhoneProvider isStudent={isStudent}>
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: palette.surface },
+          headerTintColor: palette.text,
+          headerBackButtonDisplayMode: "minimal",
+          contentStyle: { backgroundColor: palette.background },
+        }}
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="schools" options={{ title: "Your schools" }} />
+        <Stack.Screen name="checkin/[id]" options={{ title: "Check in", presentation: "fullScreenModal", headerShown: false }} />
+        <Stack.Screen name="course/[id]" options={{ title: "Course" }} />
+        <Stack.Screen name="course/new" options={{ title: "Add a course" }} />
+        <Stack.Screen name="session/start" options={{ title: "Start a session" }} />
+        <Stack.Screen name="session/[id]" options={{ title: "Session" }} />
+        <Stack.Screen name="register/start" options={{ title: "Take register" }} />
+        <Stack.Screen name="register/[id]" options={{ title: "Register" }} />
+      </Stack>
+    </PhoneProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  brand: { flexDirection: "row", alignItems: "center", gap: 8 },
-  brandText: { fontSize: 17, fontWeight: "700" },
-});

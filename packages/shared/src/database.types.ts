@@ -341,6 +341,8 @@ export type Database = {
       }
       course_runs: {
         Row: {
+          approved_at: string | null
+          created_by: string | null
           academic_period_id: string
           course_id: string
           created_at: string
@@ -351,6 +353,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approved_at?: string | null
+          created_by?: string | null
           academic_period_id: string
           course_id: string
           created_at?: string
@@ -361,6 +365,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approved_at?: string | null
+          created_by?: string | null
           academic_period_id?: string
           course_id?: string
           created_at?: string
@@ -437,6 +443,7 @@ export type Database = {
       }
       devices: {
         Row: {
+          hardware_hash: string | null
           active_from: string | null
           approved_at: string | null
           id: string
@@ -449,6 +456,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          hardware_hash?: string | null
           active_from?: string | null
           approved_at?: string | null
           id?: string
@@ -461,6 +469,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          hardware_hash?: string | null
           active_from?: string | null
           approved_at?: string | null
           id?: string
@@ -812,6 +821,33 @@ export type Database = {
           },
         ]
       }
+      push_outbox: {
+        Row: {
+          body: string
+          created_at: string
+          data: Json
+          id: number
+          read_at: string | null
+          title: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          data?: Json
+          id?: never
+          read_at?: string | null
+          title: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          data?: Json
+          id?: never
+          read_at?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       register_entries: {
         Row: {
           mark: Database["public"]["Enums"]["attendance_mark"]
@@ -931,6 +967,7 @@ export type Database = {
       }
       school_settings: {
         Row: {
+          course_approval_required: boolean
           lecturers_add_after_end: boolean
           lecturers_add_venues: boolean
           lecturers_remove_self_checkins: boolean
@@ -950,6 +987,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          course_approval_required?: boolean
           lecturers_add_after_end?: boolean
           lecturers_add_venues?: boolean
           lecturers_remove_self_checkins?: boolean
@@ -969,6 +1007,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          course_approval_required?: boolean
           lecturers_add_after_end?: boolean
           lecturers_add_venues?: boolean
           lecturers_remove_self_checkins?: boolean
@@ -1559,6 +1598,78 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_course_run: {
+        Args: { p_course_run_id: string }
+        Returns: undefined
+      }
+      check_in: {
+        Args: {
+          p_session_id: string
+          p_device_secret: string
+          p_lat?: number | null
+          p_lng?: number | null
+          p_accuracy?: number | null
+          p_mocked?: boolean
+          p_qr_token?: string | null
+        }
+        Returns: { checked_in_at: string; distance_m: number | null; course_code: string; reward_marks: number }[]
+      }
+      dismiss_notifications: {
+        Args: { p_ids?: number[] | null }
+        Returns: undefined
+      }
+      lecturer_add_course: {
+        Args: { p_school_id: string; p_code: string; p_title: string; p_period_id: string }
+        Returns: string
+      }
+      mark_notifications_read: {
+        Args: { p_ids?: number[] | null }
+        Returns: undefined
+      }
+      my_course_sessions: {
+        Args: { p_course_run_id: string }
+        Returns: {
+          session_id: string
+          starts_at: string
+          ends_at: string
+          voided: boolean
+          checked_in_at: string | null
+          method: string | null
+          reward_marks: number
+        }[]
+      }
+      my_courses: {
+        Args: { p_school_id: string }
+        Returns: {
+          course_run_id: string
+          code: string
+          title: string
+          semester: string
+          enrolled: boolean
+          sessions_held: number
+          attended: number
+          marks: number
+          lecturers: string | null
+        }[]
+      }
+      my_device: {
+        Args: { p_secret: string }
+        Returns: {
+          status: Database["public"]["Enums"]["device_status"]
+          label: string
+          active_from: string | null
+          needs_admin: boolean
+          active_label: string | null
+        }[]
+      }
+      register_device: {
+        Args: { p_secret: string; p_label: string; p_platform: string; p_hardware_id?: string | null }
+        Returns: { device_id: string; status: Database["public"]["Enums"]["device_status"]; active_from: string | null; needs_admin: boolean }[]
+      }
+      set_push_token: {
+        Args: { p_secret: string; p_token: string | null }
+        Returns: undefined
+      }
       add_venue: {
         Args: { p_school_id: string; p_name: string; p_lat: number; p_lng: number; p_radius_m: number }
         Returns: string

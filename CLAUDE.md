@@ -130,7 +130,7 @@ Add mobile packages with `npx expo install <pkg>` from `apps/mobile`, never `pnp
 2. **Schema, RLS and auth** (done): schools, staff and roles, programmes, batches, courses, runs, enrolments, classes, students, guardians and links, settings. School sign-up and verification. School ID sign-in.
 3. **Non-tertiary registers** (done): daily and per-period marking on web and mobile, offline sync, auto close, term totals on the class page. Also: logo and icons, light and dark themes with a manual choice, privacy policy, aligned form fields.
 4. **SMS outbox** (done, except the admin's daily summary of delegated changes): alerts, grace period, combining, quiet hours, opt-outs, guardian system messages, broadcasts and custom messages, credits, Messages page.
-5. **Tertiary sessions:** 5a (done): database, check-in function, venues, device binding and approvals, rotating QR, push queue and sender, web sessions with live count. 5b: mobile check-in (location, biometrics, QR scan), phone binding, push tokens, lecturer sessions from the app.
+5. **Tertiary sessions:** 5a (done): database, check-in function, venues, device binding and approvals, rotating QR, push queue and sender, web sessions with live count. 5b (done): mobile tabs, check-in (Face ID or fingerprint, location, QR scan), phone binding, push and the notification list, lecturer sessions and courses in the app; web menu groups, search on lists, phone-width fixes, lecturer-created courses.
 6. **Records, marks and reports** on web and mobile; exports; GES (Ghana Education Service) register export.
 7. **Billing:** Paystack plans, trials, SMS credits and top-ups (web only).
 8. **Stediis link:** sync API, webhooks, "Continue with Stediis".
@@ -142,3 +142,17 @@ Add mobile packages with `npx expo install <pkg>` from `apps/mobile`, never `pnp
 - `DependsOn` (components/form.tsx) shows or enables fields only while another field has a value (start time only for "Later", quiet hours times only when quiet hours are on). Hidden or disabled fields are not submitted, so actions treat them as optional.
 - `CheckboxField` keeps the submitted value and shows its error after a failed save.
 - `useFreshState` clears a form's message when its page is left (Next.js keeps left pages alive), so old messages never greet you on return.
+
+
+## Part 5b decisions
+
+- Mobile navigation: `(app)/(tabs)` with Today, Courses (students), Sessions (tertiary staff), Notifications (students) and Account; other screens are stack screens in `(app)/_layout.tsx` (check-in is a full-screen modal). Tabs are hidden per role with `href: null`.
+- Pull to refresh everywhere, with a "Pull down to refresh" hint until the person has pulled once (`usePullHint`). Live updates through Supabase Realtime on `attendance_sessions` and `session_checkins`.
+- Mobile dialogs: `ConfirmDialog` and `ReasonDialog` in `components/dialog.tsx` (no native Alert).
+- Check-in order: confirm it is the student (`expo-local-authentication`; a phone with no screen lock cannot check in), then location (one high-accuracy reading, 20 second limit, `mocked` flag sent), then the QR scan last so the token is fresh, then `check_in`.
+- Phone recognition: secret in `expo-secure-store` with `WHEN_UNLOCKED_THIS_DEVICE_ONLY`, plus the phone's own app ID (`expo-application`: Android ID, iOS vendor ID) hashed into `devices.hardware_hash`. A new secret with the same hardware ID re-keys the active phone instead of starting a 48 hour wait (a reinstall). `@expo/app-integrity` is in the build for a later real-phone check.
+- Notifications list: the student's own `push_outbox` rows; `mark_notifications_read` when the tab opens, `dismiss_notifications` on swipe or Clear all.
+- Lecturer courses: `lecturer_add_course` (new course, or a new semester of an existing code); `course_runs.approved_at` is null while waiting when `school_settings.course_approval_required` (default on). Students cannot join and sessions cannot start until `approve_course_run`.
+- Native config lives in `apps/mobile/app.config.ts`, which extends app.json (app.json keeps the EAS project ID). Every permission string explains its use; background location and microphone are blocked. Android push needs Firebase's google-services.json as the EAS file environment variable `GOOGLE_SERVICES_JSON`.
+- One development build covers Parts 5 to 8: location, camera, local authentication, notifications, application, app integrity, haptics, network, file system, sharing, auth session, SVG, keep awake, dev client.
+- Web: the dashboard menu is grouped (Attendance, People, Courses or Classes) and becomes a Menu panel on phones. `Table` takes `search` to filter its rows as you type. Global CSS keeps phone pages within the screen width (grid children may shrink, date inputs, long monospace text breaks).

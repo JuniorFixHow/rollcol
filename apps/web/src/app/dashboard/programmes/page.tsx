@@ -28,7 +28,7 @@ export default async function ProgrammesPage() {
         {(programmes ?? []).length === 0 ? (
           <EmptyState>No programmes yet.</EmptyState>
         ) : (
-          <Table headers={["Programme", "Batches", "Students", ""]}>
+          <Table search="Search programmes" headers={["Programme", "Batches", "Students", ""]}>
             {(programmes ?? []).map((programme) => (
               <tr key={programme.id}>
                 <Td>

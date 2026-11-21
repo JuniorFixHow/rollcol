@@ -2,7 +2,7 @@
 
 import { batchSchema, courseRunSchema, courseSchema, programmeSchema } from "@rollcol/shared";
 import { refresh } from "next/cache";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, requireStaff } from "@/lib/auth";
 import { type FormState, failed, formValues, invalid, succeeded } from "@/lib/forms";
 
 export async function addProgramme(_: FormState, formData: FormData): Promise<FormState> {
@@ -113,4 +113,30 @@ export async function removeRecord(_: FormState, formData: FormData): Promise<Fo
   if (error) return failed(error);
   refresh();
   return succeeded("Removed.");
+}
+
+export async function lecturerAddCourse(_: FormState, formData: FormData): Promise<FormState> {
+  const { supabase, member } = await requireStaff();
+  const values = formValues(formData);
+  const code = (values.code ?? "").trim();
+  if (!/^[A-Za-z0-9 -]{2,20}$/.test(code)) {
+    return { status: "error", message: "Enter a course code.", fieldErrors: { code: "2 to 20 letters and numbers, for example NUR 201." }, values };
+  }
+  const { error } = await supabase.rpc("lecturer_add_course", {
+    p_school_id: member.school.id,
+    p_code: code,
+    p_title: values.title ?? "",
+    p_period_id: values.periodId ?? "",
+  });
+  if (error) return failed(error, values);
+  refresh();
+  return succeeded(`${code.toUpperCase()} added. You are its lecturer.`);
+}
+
+export async function approveCourseRun(_: FormState, formData: FormData): Promise<FormState> {
+  const { supabase } = await requireAdmin();
+  const { error } = await supabase.rpc("approve_course_run", { p_course_run_id: String(formData.get("courseRunId") ?? "") });
+  if (error) return failed(error);
+  refresh();
+  return succeeded("Approved.");
 }

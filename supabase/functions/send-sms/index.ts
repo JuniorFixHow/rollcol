@@ -173,5 +173,5 @@ Deno.serve(async (request: Request) => {
     }
   }
 
-  return json({ sent, failed });
+  return json({ service: "sms", sent, failed });
 });

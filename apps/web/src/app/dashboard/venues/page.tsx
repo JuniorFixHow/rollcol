@@ -38,7 +38,7 @@ export default async function VenuesPage() {
         {(venues ?? []).length === 0 ? (
           <EmptyState>No venues yet. Add the halls where lectures take place.</EmptyState>
         ) : (
-          <Table headers={["Venue", "Location", "Radius", ""]}>
+          <Table search="Search venues" headers={["Venue", "Location", "Radius", ""]}>
             {(venues ?? []).map((venue) => (
               <tr key={venue.id}>
                 <Td>

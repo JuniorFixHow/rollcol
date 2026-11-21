@@ -149,7 +149,7 @@ export default async function MessagesPage({ searchParams }: PageProps<"/dashboa
           {(outbox ?? []).length === 0 ? (
             <EmptyState>No messages yet. Alerts appear here 15 minutes after a register is submitted or closes.</EmptyState>
           ) : (
-            <Table headers={["To", "Message", "Status", "When"]}>
+            <Table search="Search by guardian, phone or message" headers={["To", "Message", "Status", "When"]}>
               {(outbox ?? []).map((sms) => (
                 <tr key={sms.id}>
                   <Td className="text-sm">

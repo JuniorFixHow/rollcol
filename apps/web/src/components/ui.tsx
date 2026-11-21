@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
+import { ListSearch } from "@/components/list-search";
 
 /** Shared look for buttons and links styled as buttons. */
 export function buttonClass(variant: "primary" | "secondary" | "danger" | "ghost" = "primary", size: "md" | "sm" = "md") {
@@ -16,7 +17,7 @@ export function buttonClass(variant: "primary" | "secondary" | "danger" | "ghost
 }
 
 export const inputClass =
-  "block h-10 w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted/70 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25 aria-invalid:border-danger";
+  "block h-10 w-full min-w-0 rounded-md border border-line bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted/70 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25 aria-invalid:border-danger";
 
 export function LinkButton({
   variant = "primary",
@@ -86,8 +87,8 @@ export function EmptyState({ children }: { children: ReactNode }) {
   return <p className="rounded-md border border-dashed border-line px-4 py-6 text-center text-sm text-muted">{children}</p>;
 }
 
-export function Table({ headers, children }: { headers: string[]; children: ReactNode }) {
-  return (
+export function Table({ headers, children, search }: { headers: string[]; children: ReactNode; search?: string }) {
+  const table = (
     <div className="overflow-x-auto rounded-lg border border-line">
       <table className="w-full min-w-[36rem] text-left text-sm">
         <thead className="bg-surface-muted text-xs uppercase tracking-wide text-muted">
@@ -103,6 +104,7 @@ export function Table({ headers, children }: { headers: string[]; children: Reac
       </table>
     </div>
   );
+  return search ? <ListSearch placeholder={search}>{table}</ListSearch> : table;
 }
 
 export function Td({ children, className = "" }: { children?: ReactNode; className?: string }) {

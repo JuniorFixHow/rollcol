@@ -114,7 +114,7 @@ export default async function StudentsPage({ searchParams }: PageProps<"/dashboa
             {status === "pending" ? "No students are waiting for approval." : "No students here yet."}
           </EmptyState>
         ) : (
-          <Table headers={tertiary ? ["Name", "School ID", "Programme", ""] : ["Name", "School ID", "Class", "Guardians"]}>
+          <Table search="Search by name, school ID, class or programme" headers={tertiary ? ["Name", "School ID", "Programme", ""] : ["Name", "School ID", "Class", "Guardians"]}>
             {students.map((student) => (
               <tr key={student.id}>
                 <Td>

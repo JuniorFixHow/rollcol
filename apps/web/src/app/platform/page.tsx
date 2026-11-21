@@ -66,7 +66,7 @@ async function Schools() {
       {schools.length === 0 ? (
         <EmptyState>No schools yet.</EmptyState>
       ) : (
-        <Table headers={["School", "Contact", "People", "SMS", "Registered", "Status", ""]}>
+        <Table search="Search schools" headers={["School", "Contact", "People", "SMS", "Registered", "Status", ""]}>
           {schools.map((school) => (
             <tr key={school.id}>
               <Td>
@@ -165,7 +165,8 @@ async function SmsSender() {
   const rows = data ?? [];
   const first = rows[0];
   if (!first) return null;
-  const replies = rows.filter((row) => row.replied_at !== null);
+  // The push sender (send-push) shares pg_net; only the SMS sender's replies count here.
+  const replies = rows.filter((row) => row.replied_at !== null && !(row.reply ?? "").includes('"service":"push"'));
 
   let summary: { ok: boolean; text: string };
   if (!first.configured) {

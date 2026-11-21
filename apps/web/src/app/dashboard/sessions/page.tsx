@@ -224,7 +224,7 @@ interface Row {
 
 function SessionTable({ sessions }: { sessions: Row[] }) {
   return (
-    <Table headers={["Course", "When", "Where", "Checked in", "Status"]}>
+    <Table search="Search by course or venue" headers={["Course", "When", "Where", "Checked in", "Status"]}>
       {sessions.map((session) => {
         const present = session.session_checkins[0]?.count ?? 0;
         const enrolled = session.course_run?.enrolments[0]?.count ?? 0;

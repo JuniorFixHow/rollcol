@@ -126,4 +126,5 @@ export const sessionRulesSchema = z.object({
   lecturersAddVenues: z.boolean(),
   lecturersRemoveSelfCheckins: z.boolean(),
   lecturersAddAfterEnd: z.boolean(),
+  courseApprovalRequired: z.boolean(),
 });

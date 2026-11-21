@@ -5,7 +5,7 @@ import { ActionForm, FieldButton, FormMessage, InlineAction, SelectField, Submit
 import { Badge, Card, EmptyState, PageHeader, Table, Td } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
 import { listTeachers } from "@/lib/queries";
-import { addCourse, addCourseRun, addLecturer, removeLecturer, removeRecord } from "./actions";
+import { addCourse, addCourseRun, addLecturer, approveCourseRun, lecturerAddCourse, removeLecturer, removeRecord } from "./actions";
 
 export const metadata: Metadata = { title: "Courses" };
 
@@ -30,18 +30,21 @@ export default async function CoursesPage({ searchParams }: PageProps<"/dashboar
     (semesters ?? []).find((s) => s.starts_on <= today && today <= s.ends_on) ??
     (semesters ?? [])[0];
 
-  const [runsResult, { data: courses }, lecturers] = await Promise.all([
+  const [runsResult, { data: courses }, lecturers, { data: rules }] = await Promise.all([
     semester
       ? supabase
           .from("course_runs")
           .select(
-            "id, source, course:courses(code, title), course_run_staff(staff_id, staff(full_name)), enrolments(count)",
+            "id, source, approved_at, course:courses(code, title), course_run_staff(staff_id, staff(full_name)), enrolments(count)",
           )
           .eq("academic_period_id", semester.id)
       : Promise.resolve({ data: [] }),
     supabase.from("courses").select("id, code, title, source").eq("school_id", school.id).order("code"),
     isAdmin ? listTeachers(supabase, school.id) : Promise.resolve([]),
+    supabase.from("school_settings").select("course_approval_required").eq("school_id", school.id).maybeSingle(),
   ]);
+  const approvalRequired = rules?.course_approval_required ?? true;
+  const openSemesters = (semesters ?? []).filter((s) => s.ends_on >= today);
 
   const allRuns = [...(runsResult.data ?? [])].sort((a, b) => (a.course?.code ?? "").localeCompare(b.course?.code ?? ""));
   const runs = isAdmin ? allRuns : allRuns.filter((run) => run.course_run_staff.some((row) => row.staff_id === member.id));
@@ -85,12 +88,26 @@ export default async function CoursesPage({ searchParams }: PageProps<"/dashboar
             {runs.length === 0 ? (
               <EmptyState>{isAdmin ? "No courses in this semester yet." : "You are not assigned to a course this semester."}</EmptyState>
             ) : (
-              <Table headers={["Course", "Lecturers", "Students", ""]}>
+              <Table search="Search by code, title or lecturer" headers={["Course", "Lecturers", "Students", ""]}>
                 {runs.map((run) => (
                   <tr key={run.id}>
                     <Td>
                       <span className="font-mono text-xs text-muted">{run.course?.code}</span>
                       <span className="block font-medium">{run.course?.title}</span>
+                      {run.approved_at ? null : (
+                        <span className="mt-1 flex flex-wrap items-center gap-2">
+                          <Badge tone="warning">Waiting for approval</Badge>
+                          {isAdmin ? (
+                            <InlineAction
+                              action={approveCourseRun}
+                              hidden={{ courseRunId: run.id }}
+                              label="Approve"
+                              variant="primary"
+                              confirm={`Approve ${run.course?.code ?? "this course"}? Students can then join it, and its lecturers can run sessions.`}
+                            />
+                          ) : null}
+                        </span>
+                      )}
                     </Td>
                     <Td>
                       <ul className="space-y-1">
@@ -170,6 +187,38 @@ export default async function CoursesPage({ searchParams }: PageProps<"/dashboar
             ) : null}
           </Card>
         )}
+
+        {!isAdmin && openSemesters.length > 0 ? (
+          <Card
+            title="Add a course you teach"
+            description={
+              approvalRequired
+                ? "You become its lecturer. An admin approves it before students can join and you can run sessions."
+                : "You become its lecturer, and students can join it straight away."
+            }
+          >
+            <ActionForm action={lecturerAddCourse} resetOnSuccess className="grid items-start gap-4 sm:grid-cols-3">
+              <TextField name="code" label="Course code" placeholder="NUR 201" autoCapitalize="characters" autoComplete="off" />
+              <TextField
+                name="title"
+                label="Title"
+                placeholder="Medical Nursing"
+                autoComplete="off"
+                hint="If the code already exists, its title is kept."
+              />
+              <SelectField
+                name="periodId"
+                label="Semester"
+                defaultValue={semester && openSemesters.some((s) => s.id === semester.id) ? semester.id : openSemesters[0]?.id}
+                options={openSemesters.map((s) => ({ value: s.id, label: s.name }))}
+              />
+              <div className="space-y-3 sm:col-span-3">
+                <FormMessage />
+                <SubmitButton>Add course</SubmitButton>
+              </div>
+            </ActionForm>
+          </Card>
+        ) : null}
 
         {isAdmin ? (
           <>

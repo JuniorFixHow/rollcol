@@ -50,6 +50,7 @@ async function saveSettings(_: FormState, formData: FormData): Promise<FormState
         lecturersAddVenues: formBoolean(formData, "lecturersAddVenues"),
         lecturersRemoveSelfCheckins: formBoolean(formData, "lecturersRemoveSelfCheckins"),
         lecturersAddAfterEnd: formBoolean(formData, "lecturersAddAfterEnd"),
+        courseApprovalRequired: formBoolean(formData, "courseApprovalRequired"),
       })
     : null;
 
@@ -90,6 +91,7 @@ async function saveSettings(_: FormState, formData: FormData): Promise<FormState
             lecturers_add_venues: rules.lecturersAddVenues,
             lecturers_remove_self_checkins: rules.lecturersRemoveSelfCheckins,
             lecturers_add_after_end: rules.lecturersAddAfterEnd,
+            course_approval_required: rules.courseApprovalRequired,
           }
         : {}),
     })
@@ -110,7 +112,7 @@ export default async function SettingsPage() {
     supabase
       .from("school_settings")
       .select(
-        "student_approval_required, student_self_signup, daily_register_closes_at, period_register_minutes, periods_per_day, sms_name, sms_absence_alerts, sms_present_alerts, sms_quiet_hours, sms_quiet_start, sms_quiet_end, lecturers_add_venues, lecturers_remove_self_checkins, lecturers_add_after_end",
+        "student_approval_required, student_self_signup, daily_register_closes_at, period_register_minutes, periods_per_day, sms_name, sms_absence_alerts, sms_present_alerts, sms_quiet_hours, sms_quiet_start, sms_quiet_end, lecturers_add_venues, lecturers_remove_self_checkins, lecturers_add_after_end, course_approval_required",
       )
       .eq("school_id", school.id)
       .single(),
@@ -135,10 +137,16 @@ export default async function SettingsPage() {
 
         {tertiary ? (
           <Card
-            title="Sessions"
+            title="Lecturers"
             description="What lecturers may do. Admins can always correct a session, and every change is kept with its reason, who made it and when."
           >
             <div className="space-y-4">
+              <CheckboxField
+                name="courseApprovalRequired"
+                label="Courses added by lecturers need an admin's approval"
+                description="Lecturers can add the courses they teach. While this is on, students cannot join a new course and no sessions can start until an admin approves it on the Courses page."
+                defaultChecked={settings?.course_approval_required ?? true}
+              />
               <CheckboxField
                 name="lecturersAddVenues"
                 label="Lecturers can add venues"

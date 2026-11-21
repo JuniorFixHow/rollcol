@@ -42,7 +42,7 @@ export default async function BatchesPage() {
         {(batches ?? []).length === 0 ? (
           <EmptyState>No batches yet.</EmptyState>
         ) : (
-          <Table headers={["Batch", "Programme", "Entry year", "Students", ""]}>
+          <Table search="Search batches" headers={["Batch", "Programme", "Entry year", "Students", ""]}>
             {(batches ?? []).map((batch) => (
               <tr key={batch.id}>
                 <Td className="font-medium">{batch.name}</Td>

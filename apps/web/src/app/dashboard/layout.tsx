@@ -6,7 +6,7 @@ import { PageSkeleton } from "@/components/ui";
 import { SchoolSwitcher } from "@/components/school-switcher";
 import { ThemePicker } from "@/components/theme";
 import { requireStaff, staffMemberships } from "@/lib/auth";
-import { DashboardNav, type NavItem } from "./nav";
+import { DashboardNav, type NavGroup } from "./nav";
 
 // Every dashboard page depends on the signed-in user, so navigation into it blocks on the server.
 export const instant = false;
@@ -15,7 +15,7 @@ export default function DashboardLayout({ children }: LayoutProps<"/dashboard">)
   return (
     <div className="flex flex-1 flex-col md:flex-row">
       <aside className="border-b border-line bg-surface md:w-60 md:shrink-0 md:border-r md:border-b-0">
-        <div className="flex h-full flex-col gap-4 p-4 md:sticky md:top-0 md:max-h-screen">
+        <div className="flex items-center gap-4 p-4 md:sticky md:top-0 md:h-screen md:flex-col md:items-stretch">
           <Brand href="/dashboard" />
           <Suspense fallback={<div className="h-40 animate-pulse rounded bg-surface-muted" />}>
             <Sidebar />
@@ -38,46 +38,64 @@ async function Sidebar() {
   const isAdmin = role === "admin";
   const tertiary = school.type === "tertiary";
 
-  const items: NavItem[] = [{ href: "/dashboard", label: "Overview" }];
-  items.push(tertiary ? { href: "/dashboard/sessions", label: "Sessions" } : { href: "/dashboard/registers", label: "Registers" });
-  if (tertiary) items.push({ href: "/dashboard/venues", label: "Venues" });
-  items.push({ href: "/dashboard/students", label: "Students" });
-  items.push(tertiary ? { href: "/dashboard/courses", label: "Courses" } : { href: "/dashboard/classes", label: "Classes" });
-  if (!tertiary) items.push({ href: "/dashboard/messages", label: "Messages" });
-  if (isAdmin) {
-    items.push({ href: "/dashboard/calendar", label: `${periodWordTitle(school.type)}s` });
-    items.push({ href: "/dashboard/staff", label: "Staff" });
-    if (tertiary) {
-      items.push({ href: "/dashboard/programmes", label: "Programmes" });
-      items.push({ href: "/dashboard/batches", label: "Batches" });
-      items.push({ href: "/dashboard/phones", label: "Phones" });
-    }
-    items.push({ href: "/dashboard/settings", label: "Settings" });
-  }
-  items.push({ href: "/dashboard/account", label: "Your account" });
+  const attendance = [
+    tertiary ? { href: "/dashboard/sessions", label: "Sessions" } : { href: "/dashboard/registers", label: "Registers" },
+    ...(tertiary ? [{ href: "/dashboard/venues", label: "Venues" }] : [{ href: "/dashboard/messages", label: "Messages" }]),
+    ...(tertiary && isAdmin ? [{ href: "/dashboard/phones", label: "Phones" }] : []),
+  ];
+  const people = [
+    { href: "/dashboard/students", label: "Students" },
+    ...(isAdmin ? [{ href: "/dashboard/staff", label: "Staff" }] : []),
+  ];
+  const academics = [
+    tertiary ? { href: "/dashboard/courses", label: "Courses" } : { href: "/dashboard/classes", label: "Classes" },
+    ...(tertiary && isAdmin
+      ? [
+          { href: "/dashboard/programmes", label: "Programmes" },
+          { href: "/dashboard/batches", label: "Batches" },
+        ]
+      : []),
+    ...(isAdmin ? [{ href: "/dashboard/calendar", label: `${periodWordTitle(school.type)}s` }] : []),
+  ];
+  const groups: NavGroup[] = [
+    { items: [{ href: "/dashboard", label: "Overview" }] },
+    { title: "Attendance", items: attendance },
+    { title: "People", items: people },
+    { title: tertiary ? "Courses" : "Classes", items: academics },
+    {
+      items: [
+        ...(isAdmin ? [{ href: "/dashboard/settings", label: "Settings" }] : []),
+        { href: "/dashboard/account", label: "Your account" },
+      ],
+    },
+  ];
 
   return (
-    <>
-      <div className="min-w-0">
-        {staffSchools.length > 1 ? (
-          <SchoolSwitcher schools={staffSchools} currentId={school.id} />
-        ) : (
-          <p className="truncate text-sm font-medium">{school.name}</p>
-        )}
-        <p className="mt-1 truncate text-xs text-muted">
-          {member.fullName}, {staffRoleLabel(role, school.type)}
-        </p>
-      </div>
-      <DashboardNav items={items} />
-      <div className="mt-auto hidden space-y-3 md:block">
-        <ThemePicker />
-        {member.isPlatformAdmin ? (
-          <a href="/platform" className="block text-xs text-accent hover:underline">
-            RollCol platform
-          </a>
-        ) : null}
-        <SignOutButton variant="ghost" />
-      </div>
-    </>
+    <DashboardNav
+      groups={groups}
+      header={
+        <div className="min-w-0">
+          {staffSchools.length > 1 ? (
+            <SchoolSwitcher schools={staffSchools} currentId={school.id} />
+          ) : (
+            <p className="truncate text-sm font-medium">{school.name}</p>
+          )}
+          <p className="mt-1 truncate text-xs text-muted">
+            {member.fullName}, {staffRoleLabel(role, school.type)}
+          </p>
+        </div>
+      }
+      footer={
+        <>
+          <ThemePicker />
+          {member.isPlatformAdmin ? (
+            <a href="/platform" className="block text-xs text-accent hover:underline">
+              RollCol platform
+            </a>
+          ) : null}
+          <SignOutButton variant="ghost" />
+        </>
+      }
+    />
   );
 }

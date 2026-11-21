@@ -144,3 +144,36 @@ body {
     background: transparent;
   }
 }
+
+/* Phones: nothing may be wider than the screen. */
+@layer base {
+  body {
+    overflow-wrap: break-word;
+  }
+  /* Grid children may shrink below their content (a dropdown is as wide as
+     its longest option otherwise). */
+  .grid > * {
+    min-width: 0;
+  }
+  input,
+  select,
+  textarea {
+    max-width: 100%;
+    min-width: 0;
+  }
+  /* iPhone Safari gives date and time boxes a fixed width that ignores the layout. */
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"] {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+  }
+  input::-webkit-date-and-time-value {
+    text-align: left;
+  }
+  /* Long codes, emails and links break instead of pushing the page wider. */
+  .font-mono {
+    word-break: break-all;
+  }
+}

@@ -28,7 +28,7 @@ export default async function PhonesPage() {
         {(changes ?? []).length === 0 ? (
           <EmptyState>No phone changes waiting.</EmptyState>
         ) : (
-          <Table headers={["Student", "New phone", "Current phone", "Becomes active", ""]}>
+          <Table search="Search by student or phone" headers={["Student", "New phone", "Current phone", "Becomes active", ""]}>
             {(changes ?? []).map((change) => (
               <tr key={change.device_id}>
                 <Td>

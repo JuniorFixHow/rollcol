@@ -102,7 +102,7 @@ export default async function ClassPage({ params }: PageProps<"/dashboard/classe
               ) : null}
             </EmptyState>
           ) : (
-            <Table headers={["Student", "Present", "Late", "Absent", "Marks"]}>
+            <Table search="Search students" headers={["Student", "Present", "Late", "Absent", "Marks"]}>
               {(students ?? []).map((student) => {
                 const totals = summaryById.get(student.id);
                 return (
@@ -158,7 +158,7 @@ export default async function ClassPage({ params }: PageProps<"/dashboard/classe
           {sortedSubjects.length === 0 ? (
             <EmptyState>No subjects on this class yet.</EmptyState>
           ) : (
-            <Table headers={["Subject", "Teacher", ""]}>
+            <Table search="Search subjects or teachers" headers={["Subject", "Teacher", ""]}>
               {sortedSubjects.map((row) => (
                 <tr key={row.id}>
                   <Td className="font-medium">{row.subject?.name}</Td>

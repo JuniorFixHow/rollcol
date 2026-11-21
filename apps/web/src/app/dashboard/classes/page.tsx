@@ -46,7 +46,7 @@ export default async function ClassesPage() {
         {classes.length === 0 ? (
           <EmptyState>{isAdmin ? "No classes yet. Create the first one below." : "You are not assigned to any class yet."}</EmptyState>
         ) : (
-          <Table headers={["Class", "Class teacher", "Students"]}>
+          <Table search="Search classes" headers={["Class", "Class teacher", "Students"]}>
             {classes.map((item) => (
               <tr key={item.id}>
                 <Td>

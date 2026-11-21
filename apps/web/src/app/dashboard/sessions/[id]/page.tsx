@@ -156,7 +156,7 @@ export default async function SessionPage({ params }: PageProps<"/dashboard/sess
           {(roster ?? []).length === 0 ? (
             <EmptyState>Nobody is registered for this course yet. Students join it in the RollCol app.</EmptyState>
           ) : (
-            <Table headers={["Student", "Status", ""]}>
+            <Table search="Search by name or school ID" headers={["Student", "Status", ""]}>
               {(roster ?? []).map((row) => (
                 <tr key={row.student_id}>
                   <Td>

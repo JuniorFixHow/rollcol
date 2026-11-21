@@ -1,7 +1,12 @@
 import { APPLE_STANDARD_EULA_URL } from "@rollcol/shared";
 import * as WebBrowser from "expo-web-browser";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { router } from "expo-router";
+import { ConfirmDialog } from "@/components/dialog";
+import { Row, SectionTitle } from "@/components/kit";
+import { formatDayTime } from "@/lib/format";
+import { usePhone } from "@/lib/phone";
 import { usePalette } from "@/components/theme";
 import { type ThemeChoice, getTheme, setTheme } from "@/lib/appearance";
 import { Body, Button, Card, Message } from "@/components/ui";
@@ -9,7 +14,9 @@ import { forgetActiveSchool, useSession } from "@/lib/session";
 import { WEB_URL, supabase } from "@/lib/supabase";
 
 export default function AccountScreen() {
-  const { member, session } = useSession();
+  const { member, session, memberships } = useSession();
+  const { phone } = usePhone();
+  const [confirm, setConfirm] = useState<{ message: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [theme, setThemeChoice] = useState<ThemeChoice>("system");
@@ -44,10 +51,7 @@ export default function AccountScreen() {
         ? `You are the only staff member at ${deleted.join(", ")}, so ${deleted.length === 1 ? "that school and all its records" : "those schools and all their records"} will be deleted too. This cannot be undone.`
         : "Your RollCol account will be removed from every school, with the data tied to it. This cannot be undone.";
 
-    Alert.alert("Delete your account?", message, [
-      { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: () => void deleteAccount() },
-    ]);
+    setConfirm({ message });
   }
 
   async function deleteAccount() {
@@ -76,6 +80,32 @@ export default function AccountScreen() {
           <Body muted>One email and password work for all your schools.</Body>
         ) : null}
       </Card>
+
+      {memberships.length > 1 || member?.kind === "staff" ? (
+        <Row
+          title={memberships.length > 1 ? `Switch school (${memberships.length} schools)` : "Your schools"}
+          subtitle={member && member.kind !== "none" ? `Now: ${member.school.name}` : undefined}
+          onPress={() => router.push("/schools")}
+        />
+      ) : null}
+
+      {phone ? (
+        <View style={styles.group}>
+          <SectionTitle>This phone</SectionTitle>
+          <Card>
+            <Body>{phone.label}</Body>
+            <Body muted>
+              {phone.status === "active"
+                ? "Your check-in phone. Each student checks in from one phone."
+                : phone.status === "pending"
+                  ? phone.needsAdmin
+                    ? `Waiting for your school admin to approve it. ${phone.activeLabel ? `${phone.activeLabel} is still your check-in phone.` : ""}`
+                    : `Becomes your check-in phone on ${phone.activeFrom ? formatDayTime(phone.activeFrom) : "soon"}, unless your admin approves it sooner.`
+                  : "Replaced by another phone. You check in on your other phone."}
+            </Body>
+          </Card>
+        </View>
+      ) : null}
 
       <View style={styles.group}>
         <Text style={[styles.heading, { color: palette.text }]}>Appearance</Text>
@@ -111,6 +141,19 @@ export default function AccountScreen() {
         <Button label="Delete account" variant="danger" onPress={() => void startDeletion()} busy={busy} />
         <Body muted>Deleting your account removes your RollCol data. If your school also uses Stediis, your Stediis account is not affected.</Body>
       </View>
+      <ConfirmDialog
+        visible={confirm !== null}
+        title="Delete your account?"
+        message={confirm?.message}
+        confirmLabel="Delete"
+        danger
+        busy={busy}
+        onCancel={() => setConfirm(null)}
+        onConfirm={() => {
+          setConfirm(null);
+          void deleteAccount();
+        }}
+      />
     </ScrollView>
   );
 }

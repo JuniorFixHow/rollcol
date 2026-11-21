@@ -118,6 +118,17 @@ Students get push notifications on their phones (session open, 5 minutes left, p
 
 Phones register for notifications in the mobile app (Part 5b).
 
+## Mobile development build (Part 5b)
+
+The app uses native features (location, camera, Face ID, notifications), so it runs in a development build instead of Expo Go. Build once; later changes to screens load without rebuilding.
+
+1. From `apps/mobile`: `npx eas-cli@latest init` (only if app.json has no `extra.eas.projectId` yet).
+2. If your iPhone is not registered with your Apple team yet: `npx eas-cli@latest device:create`.
+3. `npx eas-cli@latest build --profile development --platform ios`. When asked, sign in to Apple and let EAS set up push notifications.
+4. Install the build on the phone from the link EAS gives, then run `pnpm dev:mobile` and open the project from the RollCol app.
+
+Android push notifications also need a Firebase project: download its `google-services.json` and add it in EAS (Project > Environment variables) as a **file** variable named `GOOGLE_SERVICES_JSON` for the development environment, and upload the Firebase service account key under Credentials > Android > FCM V1.
+
 ## Test data
 
 1. Open `supabase/test-data/load.sql` and set your own email (so you become admin of every test school) and your phone number (the only number test guardians use) at the top.

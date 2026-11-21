@@ -55,7 +55,7 @@ export default async function StaffPage() {
       />
 
       <div className="space-y-6">
-        <Table headers={["Name", "School ID", "Email", "Role", ""]}>
+        <Table search="Search by name, staff ID or email" headers={["Name", "School ID", "Email", "Role", ""]}>
           {staff.map((person) => {
             const isMe = person.id === member.id;
             const disabled = person.status === "disabled";
