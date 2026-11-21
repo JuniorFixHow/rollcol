@@ -61,7 +61,10 @@ function NavLinks({ groups, onNavigate }: { groups: NavGroup[]; onNavigate?: () 
   return (
     <nav aria-label="Dashboard" className="space-y-1">
       {groups.map((group, index) => {
-        if (!group.title) return <div key={`plain-${index}`}>{group.items.map((item) => link(item, false))}</div>;
+        // A group with a single link is just that link (no heading to open).
+        if (!group.title || group.items.length < 2) {
+          return <div key={group.title ?? `plain-${index}`}>{group.items.map((item) => link(item, false))}</div>;
+        }
         const containsActive = group.items.some((item) => isActive(pathname, item.href));
         const open = containsActive || (toggled[group.title] ?? false);
         const id = `nav-${group.title.toLowerCase().replace(/\W+/g, "-")}`;

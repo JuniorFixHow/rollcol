@@ -122,7 +122,7 @@ Add mobile packages with `npx expo install <pkg>` from `apps/mobile`, never `pnp
 ### Pricing (per student; per term for non-tertiary, per semester for tertiary)
 - Non-tertiary: **Free** (registers, records, marks; no SMS except system messages), **trial** of full alerts for 2 to 4 weeks after verification, **Alerts GHS 3** (absence and late alerts), **Complete GHS 6** (adds daily present alerts to one chosen guardian per student, SHS as a daily digest, term reports, included broadcast credits). SMS top-ups for broadcasts and custom messages.
 - Tertiary: free up to 200 students with every anti-cheat feature; Standard GHS 2 to 3 (saved venues, exports, analytics, admin oversight). Anti-cheat is never a paid feature.
-- Later: teacher and lecturer workspaces (Google Classroom style; free limit counts all workspaces an account owns; free workspaces send no attendance SMS; priced slightly above school rates; can move into a school account) and a Stediis bundle discount.
+- Teacher and lecturer workspaces are Part 7 (Google Classroom style; free limit counts all workspaces an account owns; free workspaces send no attendance SMS; priced slightly above school rates; can move into a school account) and a Stediis bundle discount.
 
 ## Build plan
 
@@ -132,9 +132,10 @@ Add mobile packages with `npx expo install <pkg>` from `apps/mobile`, never `pnp
 4. **SMS outbox** (done, except the admin's daily summary of delegated changes): alerts, grace period, combining, quiet hours, opt-outs, guardian system messages, broadcasts and custom messages, credits, Messages page.
 5. **Tertiary sessions:** 5a (done): database, check-in function, venues, device binding and approvals, rotating QR, push queue and sender, web sessions with live count. 5b (done): mobile tabs, check-in (Face ID or fingerprint, location, QR scan), phone binding, push and the notification list, lecturer sessions and courses in the app; web menu groups, search on lists, phone-width fixes, lecturer-created courses.
 6. **Records, marks and reports** on web and mobile; exports; GES (Ghana Education Service) register export.
-7. **Billing:** Paystack plans, trials, SMS credits and top-ups (web only).
-8. **Stediis link:** sync API, webhooks, "Continue with Stediis".
-9. **Launch preparation:** public pages, in-app help, onboarding screens, permission strings, store listings, replace all test settings and secrets.
+7. **Teacher and lecturer workspaces:** a teacher or lecturer uses RollCol alone, without a school (Google Classroom style): their own classes or courses, students and guardians, registers and sessions; can later move into a school.
+8. **Billing:** Paystack plans (schools and workspaces), trials, SMS credits and top-ups (web only).
+9. **Stediis link:** sync API, webhooks, "Continue with Stediis".
+10. **Launch preparation:** public pages with a site footer, contact page, help centre and guides (as in Stediis), in-app help, onboarding screens, permission strings, store listings, replace all test settings and secrets.
 
 
 ## Web form conventions
