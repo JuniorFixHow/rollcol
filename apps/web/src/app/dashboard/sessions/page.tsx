@@ -163,11 +163,16 @@ export default async function SessionsPage() {
                 <CheckboxField
                   name="qrRequired"
                   label="Rotating code"
-                  description="Students also scan a code on your screen that keeps changing, so a photo shared outside class does not work."
-                  defaultChecked
+                  description="An extra check against cheating: students also scan a code you show on a projector or screen."
+                  confirmOnCheck={{
+                    title: "Use a rotating code?",
+                    message:
+                      "An extra layer of security against cheating. As well as checking each student's phone and location, students must scan a code that changes every few seconds, so a photo sent from class does not work.\n\nYou need to show the code on a projector, TV or screen in the room for the whole session. If you cannot show it, leave this off.",
+                    confirmLabel: "Use rotating code",
+                  }}
                 />
               </div>
-              <DependsOn field="qrRequired" checked initially>
+              <DependsOn field="qrRequired" checked initially={false}>
                 <TextField
                   name="qrSeconds"
                   label="Code changes every (seconds)"

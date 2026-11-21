@@ -3,9 +3,11 @@ import * as Location from "expo-location";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Linking, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { ConfirmDialog } from "@/components/dialog";
 import { Empty, SectionTitle } from "@/components/kit";
 import { usePalette } from "@/components/theme";
 import { Body, Button, Field, Message } from "@/components/ui";
+import { formatDay } from "@/lib/format";
 import { type MyRun, loadMyRuns } from "@/lib/runs";
 import { useSession } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
@@ -46,7 +48,12 @@ export default function StartSessionScreen() {
   const [where, setWhere] = useState<Where>({ kind: "here" });
   const [radius, setRadius] = useState("");
   const [marks, setMarks] = useState("");
-  const [qr, setQr] = useState(true);
+  const [qr, setQr] = useState(false);
+  const [explainQr, setExplainQr] = useState(false);
+  const [when, setWhen] = useState<"now" | "later">("now");
+  const [day, setDay] = useState(0);
+  const [hour, setHour] = useState<number | null>(null);
+  const [minute, setMinute] = useState(0);
   const [qrSeconds, setQrSeconds] = useState(String(QR_SECONDS.default));
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -87,6 +94,16 @@ export default function StartSessionScreen() {
       return setError({ message: "Without a location check, use the rotating code, or students could check in from anywhere." });
     }
 
+    let startsAt: string | null = null;
+    if (when === "later") {
+      if (hour === null) return setError({ message: "Choose the start time." });
+      // Ghana is UTC+0 all year.
+      const base = new Date();
+      const start = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth(), base.getUTCDate() + day, hour, minute));
+      if (start.getTime() < Date.now()) return setError({ message: "That time has passed. Choose a later time, or start now." });
+      startsAt = start.toISOString();
+    }
+
     setBusy(true);
     let lat: number | null = null;
     let lng: number | null = null;
@@ -118,6 +135,7 @@ export default function StartSessionScreen() {
     const { data, error: startError } = await supabase.rpc("start_session", {
       p_course_run_id: runId,
       p_minutes: mins,
+      p_starts_at: startsAt,
       p_venue_id: where.kind === "venue" ? where.id : null,
       p_lat: lat,
       p_lng: lng,
@@ -193,9 +211,15 @@ export default function StartSessionScreen() {
       <View style={[styles.switchRow, { borderColor: palette.line, backgroundColor: palette.surface }]}>
         <View style={styles.flex}>
           <Text style={[styles.switchTitle, { color: palette.text }]}>Rotating code</Text>
-          <Text style={{ color: palette.muted }}>Students also scan a code on your screen that keeps changing.</Text>
+          <Text style={{ color: palette.muted }}>
+            An extra check against cheating. Students scan a code you show on a projector or screen.
+          </Text>
         </View>
-        <Switch value={qr} onValueChange={setQr} trackColor={{ true: palette.accent }} />
+        <Switch
+          value={qr}
+          onValueChange={(on) => (on ? setExplainQr(true) : setQr(false))}
+          trackColor={{ true: palette.accent }}
+        />
       </View>
       {qr ? (
         <Field
@@ -208,10 +232,65 @@ export default function StartSessionScreen() {
         />
       ) : null}
 
+      <SectionTitle>Start</SectionTitle>
+      <View style={styles.chips}>
+        <Chip label="Now" selected={when === "now"} onPress={() => setWhen("now")} />
+        <Chip label="Later" selected={when === "later"} onPress={() => setWhen("later")} />
+      </View>
+      {when === "later" ? (
+        <>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+            {Array.from({ length: 15 }, (_, offset) => {
+              const date = new Date(Date.now() + offset * 24 * 60 * 60 * 1000);
+              const label = offset === 0 ? "Today" : offset === 1 ? "Tomorrow" : formatDay(date.toISOString());
+              return <Chip key={offset} label={label} selected={day === offset} onPress={() => setDay(offset)} />;
+            })}
+          </ScrollView>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+            {Array.from({ length: 16 }, (_, index) => index + 6).map((h) => (
+              <Chip
+                key={h}
+                label={`${h % 12 === 0 ? 12 : h % 12}${h < 12 ? "am" : "pm"}`}
+                selected={hour === h}
+                onPress={() => setHour(h)}
+              />
+            ))}
+          </ScrollView>
+          <View style={styles.chips}>
+            {[0, 15, 30, 45].map((m) => (
+              <Chip key={m} label={`:${String(m).padStart(2, "0")}`} selected={minute === m} onPress={() => setMinute(m)} />
+            ))}
+          </View>
+          <Body muted>
+            {hour === null
+              ? "Choose the day, the hour and the minutes. Ghana time."
+              : `Starts ${day === 0 ? "today" : day === 1 ? "tomorrow" : formatDay(new Date(Date.now() + day * 86400000).toISOString())} at ${hour % 12 === 0 ? 12 : hour % 12}:${String(minute).padStart(2, "0")}${hour < 12 ? "am" : "pm"}. Students are told when it opens.`}
+          </Body>
+          {where.kind === "here" ? (
+            <Message tone="warning">
+              &quot;Here&quot; uses where you are now. If you are not in the room yet, choose a venue instead.
+            </Message>
+          ) : null}
+        </>
+      ) : null}
+
       {error ? <Message>{error.message}</Message> : null}
       {error?.settings ? <Button label="Open Settings" variant="secondary" onPress={() => void Linking.openSettings()} /> : null}
-      <Button label={status ?? "Start session"} busy={busy} onPress={() => void start()} />
-      <Body muted>To schedule a session for later, use the RollCol website.</Body>
+      <Button label={when === "later" ? "Schedule session" : "Start session"} busy={busy} onPress={() => void start()} />
+      {status ? <Body muted>{status}</Body> : null}
+      <ConfirmDialog
+        visible={explainQr}
+        title="Use a rotating code?"
+        message={
+          "An extra layer of security against cheating. As well as checking each student's phone and location, students must scan a code that changes every few seconds, so a photo sent from class does not work.\n\nYou need to show the code on a projector, TV or screen in the room for the whole session (your phone screen works for a small class). If you cannot show it, leave this off."
+        }
+        confirmLabel="Use rotating code"
+        onCancel={() => setExplainQr(false)}
+        onConfirm={() => {
+          setExplainQr(false);
+          setQr(true);
+        }}
+      />
     </ScrollView>
   );
 }
@@ -219,6 +298,7 @@ export default function StartSessionScreen() {
 const styles = StyleSheet.create({
   content: { padding: 20, gap: 14, paddingBottom: 40 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  row: { flexDirection: "row", gap: 8, paddingRight: 8 },
   chip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
   chipText: { fontSize: 15, fontWeight: "600" },
   switchRow: { flexDirection: "row", alignItems: "center", gap: 12, borderWidth: StyleSheet.hairlineWidth, borderRadius: 12, padding: 14 },

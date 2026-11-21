@@ -3,6 +3,9 @@ import { usePalette } from "@/components/theme";
 import { PhoneProvider } from "@/lib/phone";
 import { useSession } from "@/lib/session";
 
+// A check-in link opens straight to the check-in screen; the tabs sit underneath it.
+export const unstable_settings = { anchor: "(tabs)" };
+
 export default function AppLayout() {
   const palette = usePalette();
   const { memberships } = useSession();

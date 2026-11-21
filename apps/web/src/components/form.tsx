@@ -322,13 +322,17 @@ export function CheckboxField({
   label,
   description,
   defaultChecked,
+  confirmOnCheck,
 }: {
   name: string;
   label: string;
   description?: string;
   defaultChecked?: boolean;
+  /** Explain the choice in RollCol's dialog when it is ticked; cancelling unticks it. */
+  confirmOnCheck?: { title: string; message: string; confirmLabel: string };
 }) {
   const state = use(FormStateContext);
+  const [ask, dialog] = useConfirm();
   const error = state.fieldErrors?.[name];
   // After a save, keep what was submitted (an unticked box is not sent at all).
   const checked = state.values ? state.values[name] === "on" : Boolean(defaultChecked);
@@ -342,6 +346,16 @@ export function CheckboxField({
           defaultChecked={checked}
           aria-invalid={error ? true : undefined}
           className="mt-0.5 size-4 accent-accent"
+          onChange={(event) => {
+            if (!confirmOnCheck || !event.currentTarget.checked) return;
+            const box = event.currentTarget;
+            void ask({ ...confirmOnCheck }).then((ok) => {
+              if (ok) return;
+              box.checked = false;
+              // Let fields that depend on this box (DependsOn) know.
+              box.dispatchEvent(new Event("change", { bubbles: true }));
+            });
+          }}
         />
         <span>
           <span className="block font-medium">{label}</span>
@@ -349,6 +363,7 @@ export function CheckboxField({
         </span>
       </label>
       {error ? <p className="mt-1 ml-7 text-xs text-danger">{error}</p> : null}
+      {dialog}
     </div>
   );
 }

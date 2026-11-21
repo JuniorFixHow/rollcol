@@ -74,7 +74,7 @@ function ConfirmDialog({ options, onClose }: { options: ConfirmOptions; onClose:
         <h2 id="confirm-title" className="text-lg font-semibold">
           {title}
         </h2>
-        {message ? <div className="mt-2 text-sm leading-6 text-muted">{message}</div> : null}
+        {message ? <div className="mt-2 text-sm leading-6 whitespace-pre-line text-muted">{message}</div> : null}
         <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <button type="button" onClick={() => onClose(false)} className={buttonClass("secondary")}>
             {cancelLabel}

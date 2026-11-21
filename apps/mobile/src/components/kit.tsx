@@ -113,7 +113,7 @@ export function PullHint({ show }: { show: boolean }) {
 }
 
 const styles = StyleSheet.create({
-  badge: { alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
+  badge: { flexShrink: 0, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
   badgeText: { fontSize: 12, fontWeight: "600" },
   section: { fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.6, marginTop: 8 },
   empty: { borderWidth: 1, borderStyle: "dashed", borderRadius: 12, padding: 20, alignItems: "center", gap: 8 },

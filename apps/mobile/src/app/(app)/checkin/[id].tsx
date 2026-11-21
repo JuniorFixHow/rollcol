@@ -22,6 +22,12 @@ type Step =
   | { kind: "done"; result: CheckedIn }
   | { kind: "failed"; message: string; settings?: boolean };
 
+/** Back to where the student came from, or to Today when the screen was opened from a link. */
+function close() {
+  if (router.canGoBack()) router.back();
+  else router.replace("/");
+}
+
 export default function CheckInScreen() {
   // "t" is the code when the check-in link was opened from a camera or QR app.
   const { id, t } = useLocalSearchParams<{ id: string; t?: string }>();
@@ -139,7 +145,7 @@ export default function CheckInScreen() {
   return (
     <SafeAreaView style={[styles.flex, { backgroundColor: palette.background }]} edges={["top", "bottom"]}>
       <View style={styles.top}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Close" hitSlop={12} onPress={() => router.back()}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Close" hitSlop={12} onPress={close}>
           <Ionicons name="close" size={28} color={palette.text} />
         </Pressable>
         <View style={styles.flex}>
@@ -187,7 +193,7 @@ export default function CheckInScreen() {
                 {step.result.distance !== null ? `, ${Math.round(step.result.distance)} m from the class` : ""}
                 {step.result.marks > 0 ? `. ${step.result.marks} ${Number(step.result.marks) === 1 ? "mark" : "marks"}.` : "."}
               </Body>
-              <Button label="Done" onPress={() => router.back()} />
+              <Button label="Done" onPress={close} />
             </>
           ) : step.kind === "failed" ? (
             <>
@@ -204,7 +210,7 @@ export default function CheckInScreen() {
                   }}
                 />
               ) : null}
-              <Button label="Close" variant="secondary" onPress={() => router.back()} />
+              <Button label="Close" variant="secondary" onPress={close} />
             </>
           ) : (
             <>
