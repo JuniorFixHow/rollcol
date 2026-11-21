@@ -123,7 +123,7 @@ export function DashboardNav({ groups, header, footer }: { groups: NavGroup[]; h
       </div>
 
       {/* Phones */}
-      <div className="flex min-w-0 items-center justify-between gap-3 md:hidden">
+      <div className="flex min-w-0 flex-1 items-center justify-between gap-3 md:hidden">
         <p className="min-w-0 truncate text-sm font-medium">{current?.label ?? "Menu"}</p>
         <button
           type="button"
