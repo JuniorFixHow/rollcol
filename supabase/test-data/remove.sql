@@ -4,6 +4,6 @@
 -- Run in the Supabase dashboard: SQL Editor > New query > paste > Run.
 
 delete from public.schools where name like 'Test: %';
-delete from auth.users where email like '%@rollcol.test';
+delete from auth.users where email like '%@rollcol.test' or raw_app_meta_data ->> 'rollcol_test' = 'true';
 
 select 'Test data removed.' as result;

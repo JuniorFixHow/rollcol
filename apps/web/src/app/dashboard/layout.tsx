@@ -62,7 +62,7 @@ async function Sidebar() {
     { items: [{ href: "/dashboard", label: "Overview" }] },
     { title: "Attendance", items: attendance },
     { title: "People", items: people },
-    { title: tertiary ? "Courses" : "Classes", items: academics },
+    { title: "Academics", items: academics },
     {
       items: [
         ...(isAdmin ? [{ href: "/dashboard/settings", label: "Settings" }] : []),

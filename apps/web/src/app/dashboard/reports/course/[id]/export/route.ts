@@ -8,9 +8,10 @@ export async function GET(request: NextRequest, { params }: RouteContext<"/dashb
   const { id } = await params;
   const { supabase, member } = await requireStaff();
   if (member.school.type !== "tertiary") redirect("/dashboard/reports");
-  const data = await loadCourseReport(supabase, member, id);
+  const data = await loadCourseReport(supabase, member, id, Object.fromEntries(request.nextUrl.searchParams));
   if (!data) notFound();
   const format = request.nextUrl.searchParams.get("format") === "csv" ? "csv" : "xlsx";
   const body = format === "csv" ? courseCsv(data.report) : await courseWorkbook(data.report, data.heading);
-  return fileResponse(body, `${data.code} ${data.run.period?.name ?? "attendance"}`, format);
+  const when = data.view.mode === "all" ? (data.run.period?.name ?? "attendance") : `${data.view.from} to ${data.view.to}`;
+  return fileResponse(body, `${data.code} ${when}`, format);
 }

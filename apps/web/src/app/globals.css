@@ -224,4 +224,14 @@ video {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+  /* The page margin is 0 (no browser header or footer), so the report keeps
+     its own margin on every printed page. */
+  .print-report {
+    padding: 12mm 12mm;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+  .print-report thead {
+    display: table-header-group;
+  }
 }

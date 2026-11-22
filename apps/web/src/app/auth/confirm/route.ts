@@ -33,6 +33,9 @@ export async function GET(request: NextRequest) {
     ok = !error;
   }
 
+  // A confirmed email change: the staff records follow the new address.
+  if (ok && (type === "email_change" || code)) await supabase.rpc("sync_my_email");
+
   const target = request.nextUrl.clone();
   target.search = "";
   if (ok) {

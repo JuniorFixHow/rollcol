@@ -1601,6 +1601,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      sync_my_email: {
+        Args: never
+        Returns: undefined
+      }
+      update_my_name: {
+        Args: { p_full_name: string }
+        Returns: undefined
+      }
       attendance_overview: {
         Args: { p_school_id: string; p_period_id?: string | null }
         Returns: {
@@ -1619,7 +1627,7 @@ export type Database = {
         Returns: { student_id: string; full_name: string; school_number: string | null; day: string; mark: string | null; marks: number }[]
       }
       class_subject_summary: {
-        Args: { p_class_id: string; p_period_id?: string | null }
+        Args: { p_class_id: string; p_period_id?: string | null; p_from?: string | null; p_to?: string | null }
         Returns: { student_id: string; full_name: string; subject: string; held: number; present: number; late: number; absent: number }[]
       }
       course_run_report: {

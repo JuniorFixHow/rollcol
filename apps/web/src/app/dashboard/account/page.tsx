@@ -1,7 +1,7 @@
 import { staffRoleLabel } from "@rollcol/shared";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { InlineAction } from "@/components/form";
+import { ActionForm, FormMessage, InlineAction, SubmitButton, TextField } from "@/components/form";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ThemePicker } from "@/components/theme";
 import { Card, LinkButton, Notice, PageHeader } from "@/components/ui";
@@ -9,6 +9,7 @@ import { requireStaff, requireUser } from "@/lib/auth";
 import { type FormState, failed } from "@/lib/forms";
 import { switchSchool } from "@/lib/school-actions";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { updateMyEmail, updateMyName } from "./actions";
 
 export const metadata: Metadata = { title: "Your account" };
 
@@ -48,6 +49,8 @@ export default async function AccountPage() {
   const [{ data: effectRows }, { data: user }] = await Promise.all([
     supabase.rpc("account_deletion_effects"),
     supabase.auth.getUser(),
+    // Keeps staff records on the address the person signs in with.
+    supabase.rpc("sync_my_email"),
   ]);
   const effects: DeletionEffect[] = effectRows ?? [];
   const blocked = effects.filter((e) => e.effect === "last_admin");
@@ -57,19 +60,54 @@ export default async function AccountPage() {
     <>
       <PageHeader title="Your account" />
       <div className="space-y-6">
+        <Card title="Your details" description="Your name is what colleagues, students and guardians see, in every school you belong to.">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <ActionForm action={updateMyName} className="space-y-3">
+              <TextField
+                name="fullName"
+                label="Full name"
+                autoComplete="name"
+                defaultValue={member.fullName}
+                hint="Include your title if you use one, for example Mr. Samuel Ankrah or Dr. Felicia Mensah."
+              />
+              <FormMessage />
+              <SubmitButton size="sm">Save name</SubmitButton>
+            </ActionForm>
+            <ActionForm action={updateMyEmail} className="space-y-3">
+              <TextField
+                name="email"
+                label="Email"
+                type="email"
+                autoComplete="email"
+                defaultValue={user.user?.email ?? ""}
+                hint="You sign in with this email. We send a link to the new address to confirm it."
+              />
+              <FormMessage />
+              <SubmitButton size="sm" variant="secondary">
+                Change email
+              </SubmitButton>
+            </ActionForm>
+          </div>
+          {user.user?.new_email ? (
+            <div className="mt-4">
+              <Notice>
+                Waiting for you to confirm {user.user.new_email}. Open the link we sent there. Until then you sign in with{" "}
+                {user.user.email}.
+              </Notice>
+            </div>
+          ) : null}
+        </Card>
+
         <Card title="Sign-in details">
           <dl className="grid gap-3 text-sm sm:grid-cols-[10rem_1fr]">
-            <dt className="text-muted">Name</dt>
-            <dd>{member.fullName}</dd>
-            <dt className="text-muted">Email</dt>
-            <dd>{user.user?.email}</dd>
             <dt className="text-muted">School code</dt>
             <dd className="font-mono">{member.school.code}</dd>
             <dt className="text-muted">School ID</dt>
             <dd className="font-mono">{member.schoolNumber}</dd>
           </dl>
           <p className="mt-3 text-xs text-muted">
-            The school code and school ID are for {member.school.name}. One email and password work for all your schools.
+            The school code and school ID are for {member.school.name}; only an admin can change your school ID or role. One
+            email and password work for all your schools.
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <LinkButton href="/account/password" variant="secondary" size="sm">

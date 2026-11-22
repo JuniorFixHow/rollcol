@@ -26,7 +26,9 @@ Part 6 turns the registers and check-ins into reports:
 | uni.lecturer1@rollcol.test | Mr. Daniel Ocran, lecturer | NUR 101, GSC 103 |
 | uni.lecturer2@rollcol.test | Mrs. Gifty Amponsah, lecturer | ANA 102 |
 
-**About the numbers below.** The test data creates registers for the 10 school days before the day you load it, and 5 NUR 101 sessions. The numbers in this guide are what you see straight after loading. If you have run sessions or marked registers since, your numbers will be a little higher.
+**About the numbers below.** The test data creates registers for the 10 school days before the day you load it, and 5 NUR 101 sessions. The marks are the same on every load, so the numbers in this guide are what you see straight after loading. If you have run sessions or marked registers since, your numbers will differ a little.
+
+**Reports open on this week.** Where a test below speaks of the whole term (10 school days), first click **All** above the register (see `part-6-fixes.md` for the week view).
 
 ---
 
@@ -61,27 +63,27 @@ Do these once, in this order, in the project folder on your computer.
 
 1. Sign in. In the menu, open **Attendance**. You see a new link, **Reports**. Open it.
 2. You see a card titled **Term 1** with a table of classes: **Basic 4** and **Basic 5**.
-3. Check the columns: Students **12**, School days **10**, Attendance about **92.5%** for Basic 4 and **93.3%** for Basic 5, and **1** in "Below 75%" for each.
+3. Check the columns: Students **12**, School days **10**, Attendance **95%** for Basic 4 and **89.2%** for Basic 5, and in "Below 75%" **0** for Basic 4 and **1** for Basic 5.
 4. Type `5` in **Search classes**. Only Basic 5 is left. Clear it.
 5. The line above the table says students below 75% are counted, with a link to **Settings**.
 
 ### Test 2: A class register
 **Account:** basic.admin@rollcol.test. **Where:** Website.
 
-1. On Reports, click **Basic 4**.
+1. On Reports, click **Basic 5**, then click **All**.
 2. The **Register** card shows every pupil down the side and the 10 school days across the top (for example "Mon 9 Nov"). Each cell is **P** (green), **L** (amber) or **A** (red).
 3. Scroll the register sideways. The names stay on the left.
 4. At the end of each row: Present, Late, Absent, **Attendance** (for example "9 out of 10") and **%**.
-5. **Kojo Antwi** shows "7 out of 10" and a red **70%**.
-6. Below, the **For report cards** card lists each pupil as "Attendance 9 out of 10". Kojo Antwi has a red **Below 75%** badge. Under the table: "1 pupil is below 75%."
+5. **Ekow Mensah** shows "6 out of 10" and a red **60%**. (In Basic 4, Kojo Antwi shows "10 out of 10" and **100%**.)
+6. Below, the **For report cards** card lists each pupil as "Attendance X out of 10". Ekow Mensah has a red **Below 75%** badge. Under the table: "1 pupil is below 75%."
 7. Click a pupil's name in the register. Their student page opens (see Test 6). Go back.
 
 ### Test 3: Downloads
 **Account:** basic.admin@rollcol.test. **Where:** Website (with Excel, Numbers or Google Sheets to open the files).
 
-1. On the Basic 4 report, click **Download Excel**. A file named like `basic-4-term-1.xlsx` downloads.
-2. Open it. You see three lines at the top (school name, "Basic 4 attendance register", "Term: Term 1"), then the register in colour with the names fixed on the left.
-3. Open the second sheet, **Report card line**: each pupil with "9 out of 10" style attendance, and "Yes" under "Below 75%" for Kojo Antwi.
+1. On the Basic 5 report (with **All** chosen), click **Download Excel**. A file named like `basic-5-term-1.xlsx` downloads.
+2. Open it. You see three lines at the top (school name, "Basic 5 attendance register", "Term: Term 1"), then the register in colour with the names fixed on the left.
+3. Open the second sheet, **Report card line**: each pupil with "X out of 10" style attendance, and "Yes" under "Below 75%" for Ekow Mensah.
 4. In Excel, choose **Print preview**: the register is on landscape pages, all days on one page width.
 5. Back on the website, click **Download CSV**. Open it: the same register as plain rows (P, L, A).
 6. Click **Print or save as PDF**. The print window opens in landscape, without the menu, the buttons or the term chips. Choose **Save as PDF** to keep a copy, or cancel.
@@ -100,17 +102,17 @@ Do these once, in this order, in the project folder on your computer.
 1. Open **Settings**. Near the bottom there is a new **Reports** card with **Flag students below (%)**, set to **75**.
 2. Change it to `95` and click **Save settings**. You see "Settings saved."
 3. Open **Attendance > Reports**. The last column is now **Below 95%**, with higher numbers.
-4. Open Basic 4: more pupils have red percentages and the report card line says "Below 95%".
+4. Open Basic 4 and click **All**: more pupils have red percentages and the report card line says "Below 95%".
 5. **Wrong values:** in Settings try `0`, then `101`. Each time you see "Enter a percentage from 1 to 100." and nothing is saved.
 6. Set it back to `75` and save.
 
 ### Test 6: A pupil's record
 **Account:** basic.admin@rollcol.test. **Where:** Website.
 
-1. Open **People > Students** and click **Kojo Antwi**.
-2. Near the top there is an **Attendance, Term 1** card: "Attendance 7 out of 10" with a red **70%, below 75%** badge.
+1. Open **People > Students** and click **Ekow Mensah**.
+2. Near the top there is an **Attendance, Term 1** card: "Attendance 6 out of 10" with a red **60%, below 75%** badge.
 3. Under it: how many present, late and absent, and a list of the days he was late or absent, newest first.
-4. Click **See the class register**. The Basic 4 report opens.
+4. Click **See the class register**. The Basic 5 report opens.
 
 ---
 
@@ -132,9 +134,9 @@ Do these once, in this order, in the project folder on your computer.
 **Account:** uni.admin@rollcol.test. **Where:** Website.
 
 1. Sign in. Open **Attendance > Reports**. You see **First semester** with ANA 102, GSC 103 and NUR 101 (code with the title under it).
-2. NUR 101: Students **18**, Sessions **5**, Attendance about **85.6%**, **2** below 75%. The other two show "Nothing yet".
-3. Click **NUR 101**. The **Sessions** card shows every student by every session (date and time across the top). **P** checked in, **P\*** added by a lecturer, **A** absent.
-4. **Kwame Owusu** and **Esi Quaye** show "3 of 5" and a red **60%**. Under the grid: "2 students are below 75%."
+2. NUR 101: Students **18**, Sessions **5**, Attendance **85.6%**, **2** below 75%. The other two show "Nothing yet".
+3. Click **NUR 101**, then **All**. The **Sessions** card shows every student by every session (date and time across the top). **P** checked in, **P\*** added by a lecturer, **A** absent.
+4. **Yaw Ofori** shows "2 of 5" and a red **40%**; **Kwabena Osei** shows "3 of 5" and a red **60%**. Under the grid: "2 students are below 75%."
 5. Click a session date at the top. That session's page opens. Go back.
 6. Click **Download Excel**, then **Download CSV**, then **Print or save as PDF**. Check them as in Test 3.
 
@@ -150,7 +152,7 @@ Do these once, in this order, in the project folder on your computer.
 **Account:** uni.admin@rollcol.test. **Where:** Website.
 
 1. Open **People > Students** and click **Abena Mensah** (RGN25001).
-2. The **Attendance, First semester** card lists her courses: NUR 101 "4 of 5" with **80%**, and "No sessions yet" for the others.
+2. The **Attendance, First semester** card lists her courses: NUR 101 "5 of 5" with **100%**, and "No sessions yet" for the others.
 3. Click **NUR 101**. The course report opens.
 
 ### Test 11: Lecturers see only their own courses
@@ -175,8 +177,8 @@ Do these once, in this order, in the project folder on your computer.
 **Account:** basic.teacher1@rollcol.test. **Where:** App.
 
 1. Sign in (if you are signed in as a student, sign out first from **Account**). If asked, choose **Test: Adenta Basic School**.
-2. A new **Reports** tab is at the bottom. Open it. You see **Term 1** and **Basic 4** with its percentage, "12 students · 10 school days" and "1 below 75%".
-3. Tap **Basic 4**. You see "10 school days", then each pupil with "Attendance 9 out of 10" and present, late and absent counts. Kojo Antwi has a red **70%**.
+2. A new **Reports** tab is at the bottom. Open it. You see **Term 1** and **Basic 4** with **95%** and "12 students · 10 school days".
+3. Tap **Basic 4**. You see "10 school days", then each pupil with "Attendance X out of 10" and present, late and absent counts. Kojo Antwi shows "Attendance 10 out of 10" and **100%** (no pupil in Basic 4 is below 75%).
 4. Type `kojo` in the search box. Only Kojo Antwi is left. Clear it.
 5. Tap **Share as a spreadsheet**. The iPhone share sheet opens with a file named like `basic-4-term-1.csv`. Choose **Save to Files** (or send it to yourself on WhatsApp or by email), then open it: every pupil by every day, P, L or A.
 6. Pull down on the list. It refreshes.
@@ -186,7 +188,7 @@ Do these once, in this order, in the project folder on your computer.
 
 1. Sign in. You see the tabs Today, Sessions, **Reports** and Account.
 2. Open **Reports**. You see **NUR 101** and **GSC 103** (not ANA 102).
-3. Tap **NUR 101**: "5 sessions", 18 students, "2 below 75%". Each student shows "4 of 5 sessions".
+3. Tap **NUR 101**: "5 sessions", 18 students, "2 below 75%". Each student shows how many of the 5 sessions they attended; Yaw Ofori has a red **40%**.
 4. Tap **Share as a spreadsheet** and save or send the file as in Test 13.
 5. **Students do not get this tab:** sign out, sign in as student1@rollcol.test. The tabs are Today, Courses, Notifications and Account, with no Reports.
 

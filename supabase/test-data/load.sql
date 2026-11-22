@@ -49,7 +49,8 @@ begin
   ) values (
     '00000000-0000-0000-0000-000000000000', v_id, 'authenticated', 'authenticated', p_email,
     extensions.crypt((select password from test_settings), extensions.gen_salt('bf')), now(),
-    '{"provider": "email", "providers": ["email"]}'::jsonb,
+    -- rollcol_test lets remove.sql find this account even after its email is changed.
+    '{"provider": "email", "providers": ["email"], "rollcol_test": true}'::jsonb,
     jsonb_build_object('full_name', p_full_name), now(), now(),
     '', '', '', ''
   );
@@ -133,6 +134,9 @@ insert into test_names (n, full_name) values
 do $$
 declare
   v_today date := (now() at time zone 'Africa/Accra')::date;
+  -- School day number (1, 2, 3...). Marks are worked out from the school ID and this
+  -- number, so every load gives the same marks whatever day you load it.
+  v_n integer;
   v_phone text := (select my_phone from test_settings);
   v_has_phone boolean := (select my_phone from test_settings) <> '+233240000000';
 
@@ -185,8 +189,10 @@ begin
   insert into public.sms_credit_entries (school_id, amount, reason) values (v_basic, 50, 'Test credits'), (v_shs, 50, 'Test credits');
 
   -- Two weeks of daily registers for both classes (weekdays before today).
+  v_n := 0;
   for d in select g::date from generate_series(v_today - 14, v_today - 1, interval '1 day') g
            where extract(isodow from g) < 6 loop
+    v_n := v_n + 1;
     for r in select c.id, c.class_teacher_id from public.classes c where c.school_id = v_basic loop
       insert into public.registers (school_id, class_id, register_date, academic_period_id, status, reward_marks,
                                     opened_by, opened_at, closes_at, submitted_by, submitted_at)
@@ -196,8 +202,10 @@ begin
       returning id into v_reg;
       insert into public.register_entries (register_id, student_id, school_id, mark, marked_by, marked_at)
       select v_reg, st.id, v_basic,
-             case when pg_temp.roll(st.id::text || d::text) < 84 then 'present'
-                  when pg_temp.roll(st.id::text || d::text) < 92 then 'late'
+             -- Ekow Mensah (Basic 5) misses three days, so the reports have a pupil below 75%.
+             case when st.school_number = 'ADB5023' and v_n in (2, 5, 9) then 'absent'
+                  when pg_temp.roll(st.school_number || ':' || v_n) < 84 then 'present'
+                  when pg_temp.roll(st.school_number || ':' || v_n) < 92 then 'late'
                   else 'absent' end::public.attendance_mark,
              r.class_teacher_id, (d + time '08:00') at time zone 'Africa/Accra'
       from public.students st where st.class_id = r.id;
@@ -234,8 +242,10 @@ begin
   from test_names;
 
   -- One week of period registers: periods 1 to 3 each weekday.
+  v_n := 0;
   for d in select g::date from generate_series(v_today - 7, v_today - 1, interval '1 day') g
            where extract(isodow from g) < 6 loop
+    v_n := v_n + 1;
     for v_cs in
       select cs.id, cs.class_id, cs.teacher_id,
              row_number() over (partition by cs.class_id order by cs.id)::smallint as period
@@ -249,8 +259,8 @@ begin
       returning id into v_reg;
       insert into public.register_entries (register_id, student_id, school_id, mark, marked_by, marked_at)
       select v_reg, st.id, v_shs,
-             case when pg_temp.roll(st.id::text || v_reg::text) < 88 then 'present'
-                  when pg_temp.roll(st.id::text || v_reg::text) < 94 then 'late'
+             case when pg_temp.roll(st.school_number || ':' || v_n || ':' || v_cs.period) < 88 then 'present'
+                  when pg_temp.roll(st.school_number || ':' || v_n || ':' || v_cs.period) < 94 then 'late'
                   else 'absent' end::public.attendance_mark,
              v_cs.teacher_id, (d + time '08:10') at time zone 'Africa/Accra'
       from public.students st where st.class_id = v_cs.class_id;
@@ -295,8 +305,10 @@ begin
 
   -- Past sessions: NUR 101 on the last five weekdays, with most students checked in.
   -- Marked as already notified, so loading test data sends no notifications.
+  v_n := 0;
   for d in select g::date from generate_series(v_today - 7, v_today - 1, interval '1 day') g
            where extract(isodow from g) < 6 loop
+    v_n := v_n + 1;
     insert into public.attendance_sessions
       (school_id, course_run_id, location, radius_m, venue_id, reward_marks, qr_required, starts_at, ends_at, started_by,
        notified_open_at, notified_soon_at, notified_closed_at)
@@ -309,9 +321,9 @@ begin
     returning id into v_reg;
     insert into public.session_checkins (session_id, student_id, school_id, method, checked_in_at, distance_m, accuracy_m)
     select v_reg, st.id, v_uni, 'self', (d + time '09:05') at time zone 'Africa/Accra',
-           round((pg_temp.roll(st.id::text || d::text) * 0.5)::numeric, 1), 12
+           round((pg_temp.roll(st.school_number || ':' || v_n) * 0.5)::numeric, 1), 12
     from public.students st
-    where st.school_id = v_uni and pg_temp.roll(st.id::text || d::text) < 85;
+    where st.school_id = v_uni and pg_temp.roll(st.school_number || ':' || v_n) < 85;
   end loop;
 end;
 $$;
