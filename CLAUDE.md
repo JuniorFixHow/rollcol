@@ -132,11 +132,11 @@ Add mobile packages with `npx expo install <pkg>` from `apps/mobile`, never `pnp
 3. **Non-tertiary registers** (done): daily and per-period marking on web and mobile, offline sync, auto close, term totals on the class page. Also: logo and icons, light and dark themes with a manual choice, privacy policy, aligned form fields.
 4. **SMS outbox** (done, except the admin's daily summary of delegated changes): alerts, grace period, combining, quiet hours, opt-outs, guardian system messages, broadcasts and custom messages, credits, Messages page.
 5. **Tertiary sessions:** 5a (done): database, check-in function, venues, device binding and approvals, rotating QR, push queue and sender, web sessions with live count. 5b (done): mobile tabs, check-in (Face ID or fingerprint, location, QR scan), phone binding, push and the notification list, lecturer sessions and courses in the app; web menu groups, search on lists, phone-width fixes, lecturer-created courses.
-6. **Records, marks and reports** on web and mobile; exports; GES (Ghana Education Service) register export.
+6. **Records, marks and reports** (done): Reports page, class term registers and course semester sheets, Excel, CSV and print exports, session downloads, the GES (Ghana Education Service) "Attendance X out of Y" line, low attendance threshold, student records, app Reports tab with sharing, past times hidden when scheduling.
 7. **Teacher and lecturer workspaces:** a teacher or lecturer uses RollCol alone, without a school (Google Classroom style): their own classes or courses, students and guardians, registers and sessions; can later move into a school.
 8. **Billing:** Paystack plans (schools and workspaces), trials, SMS credits and top-ups (web only).
 9. **Stediis link:** sync API, webhooks, "Continue with Stediis".
-10. **Launch preparation:** own domain (update `SITE_URL`, universal links and App Links for check-in codes), public pages with a site footer, contact page, help centre and guides (as in Stediis), in-app help, onboarding screens, permission strings, store listings, replace all test settings and secrets.
+10. **Launch preparation:** own domain (update `SITE_URL`, universal links and App Links for check-in codes), public pages with a site footer, contact page, help centre and guides (as in Stediis), in-app help, onboarding screens, permission strings, store listings, a native date and time picker for scheduling (only future times on Today), replace all test settings and secrets (Sailup key, CRON_SECRET; support email support@rollcol.app).
 
 
 ## Web form conventions
@@ -158,3 +158,14 @@ Add mobile packages with `npx expo install <pkg>` from `apps/mobile`, never `pnp
 - Native config lives in `apps/mobile/app.config.ts`, which extends app.json (app.json keeps the EAS project ID). Every permission string explains its use; background location and microphone are blocked. Android push needs Firebase's google-services.json as the EAS file environment variable `GOOGLE_SERVICES_JSON`.
 - One development build covers Parts 5 to 8: location, camera, local authentication, notifications, application, app integrity, haptics, network, file system, sharing, auth session, SVG, keep awake, dev client.
 - Web: the dashboard menu is grouped (Attendance, People, Courses or Classes) and becomes a Menu panel on phones. `Table` takes `search` to filter its rows as you type. Global CSS keeps phone pages within the screen width (grid children may shrink, date inputs, long monospace text breaks).
+
+
+## Part 6 decisions
+
+- Migration `20261125000000_reports.sql`. Report functions (all security definer, checked inside): `class_register_days` (one row per child per school day), `class_subject_summary` (per-period schools), `course_run_report` (enrolled students by started, non-cancelled sessions), `student_course_attendance` (admins), `attendance_overview` (per class or course: students, held, rate, below threshold; admins see all, teachers their classes, lecturers their courses).
+- A term or semester is always its dates (`private.period_range`), never a stored link. The page shows the period containing today unless another is chosen.
+- GES counting: one "meeting" per school day that had a register. For per-period schools a day counts as present if the child was present or late in any period that day, late if only late, absent if absent in every period. Present and late both count as attended everywhere.
+- `school_settings.low_attendance_percent` (1 to 100, default 75), on the Settings page's Reports card for every school type.
+- Building the report from rows is shared (`packages/shared/src/reports.ts`: `buildClassReport`, `buildCourseReport`, `toCsv` which makes formula-like values plain text, `fileSlug`), so the website, downloads and app always agree.
+- Web: `/dashboard/reports`, `/dashboard/reports/class/[id]?period=`, `/dashboard/reports/course/[id]`, and route handlers `.../export?format=xlsx|csv` plus `/dashboard/sessions/[id]/export`. Excel is written with `exceljs` (`apps/web/src/lib/report-files.ts`, server only): Register sheet in colour with frozen names and landscape fit-to-width printing, "Report card line" sheet, Subjects sheet. CSV starts with a byte order mark for Excel. Printing uses `print:` variants, `PrintLandscape`, and global print CSS that hides the menu.
+- App: Reports tab for staff (`(tabs)/reports.tsx`) and `report/[kind]/[id]`; sharing writes a CSV to the cache with `expo-file-system` (`File`, `Paths.cache`) and opens `expo-sharing`. Session scheduling chips on Today offer only future slots and drop the chosen time if it passes.

@@ -41,6 +41,7 @@ async function Sidebar() {
   const attendance = [
     tertiary ? { href: "/dashboard/sessions", label: "Sessions" } : { href: "/dashboard/registers", label: "Registers" },
     ...(tertiary ? [{ href: "/dashboard/venues", label: "Venues" }] : [{ href: "/dashboard/messages", label: "Messages" }]),
+    { href: "/dashboard/reports", label: "Reports" },
     ...(tertiary && isAdmin ? [{ href: "/dashboard/phones", label: "Phones" }] : []),
   ];
   const people = [

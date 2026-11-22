@@ -54,6 +54,8 @@ export default function StartSessionScreen() {
   const [day, setDay] = useState(0);
   const [hour, setHour] = useState<number | null>(null);
   const [minute, setMinute] = useState(0);
+  // The clock, so times that pass while the screen is open disappear from the choices.
+  const [now, setNow] = useState(() => Date.now());
   const [qrSeconds, setQrSeconds] = useState(String(QR_SECONDS.default));
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -68,6 +70,33 @@ export default function StartSessionScreen() {
     });
     void supabase.rpc("school_venues", { p_school_id: member.school.id }).then(({ data }) => setVenues(data ?? []));
   }, [member]);
+
+  useEffect(() => {
+    if (when !== "later") return;
+    const timer = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(timer);
+  }, [when]);
+
+  // Ghana is UTC+0 all year. Today only offers times that have not passed.
+  const clock = new Date(now);
+  const nowMinutes = clock.getUTCHours() * 60 + clock.getUTCMinutes();
+  const slotOpen = (d: number, h: number, m: number) => d > 0 || h * 60 + m > nowMinutes;
+  const HOURS = Array.from({ length: 16 }, (_, index) => index + 6);
+  const MINUTES = [0, 15, 30, 45];
+  const todayOpen = HOURS.some((h) => MINUTES.some((m) => slotOpen(0, h, m)));
+  const firstDay = todayOpen ? 0 : 1;
+  const shownDay = Math.max(day, firstDay);
+  const hours = HOURS.filter((h) => MINUTES.some((m) => slotOpen(shownDay, h, m)));
+  const shownHour = hour !== null && hours.includes(hour) ? hour : null;
+  const minutes15 = shownHour === null ? MINUTES : MINUTES.filter((m) => slotOpen(shownDay, shownHour, m));
+  const shownMinute = minutes15.includes(minute) ? minute : (minutes15[0] ?? 0);
+
+  useEffect(() => {
+    // Keep the saved choice in step with what is shown when a time passes.
+    if (day !== shownDay) setDay(shownDay);
+    if (hour !== shownHour) setHour(shownHour);
+    if (minute !== shownMinute) setMinute(shownMinute);
+  }, [day, hour, minute, shownDay, shownHour, shownMinute]);
 
   if (!member || member.kind !== "staff") return null;
 
@@ -240,14 +269,14 @@ export default function StartSessionScreen() {
       {when === "later" ? (
         <>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-            {Array.from({ length: 15 }, (_, offset) => {
-              const date = new Date(Date.now() + offset * 24 * 60 * 60 * 1000);
+            {Array.from({ length: 15 }, (_, index) => index + firstDay).map((offset) => {
+              const date = new Date(now + offset * 24 * 60 * 60 * 1000);
               const label = offset === 0 ? "Today" : offset === 1 ? "Tomorrow" : formatDay(date.toISOString());
               return <Chip key={offset} label={label} selected={day === offset} onPress={() => setDay(offset)} />;
             })}
           </ScrollView>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-            {Array.from({ length: 16 }, (_, index) => index + 6).map((h) => (
+            {hours.map((h) => (
               <Chip
                 key={h}
                 label={`${h % 12 === 0 ? 12 : h % 12}${h < 12 ? "am" : "pm"}`}
@@ -257,14 +286,16 @@ export default function StartSessionScreen() {
             ))}
           </ScrollView>
           <View style={styles.chips}>
-            {[0, 15, 30, 45].map((m) => (
+            {minutes15.map((m) => (
               <Chip key={m} label={`:${String(m).padStart(2, "0")}`} selected={minute === m} onPress={() => setMinute(m)} />
             ))}
           </View>
           <Body muted>
             {hour === null
-              ? "Choose the day, the hour and the minutes. Ghana time."
-              : `Starts ${day === 0 ? "today" : day === 1 ? "tomorrow" : formatDay(new Date(Date.now() + day * 86400000).toISOString())} at ${hour % 12 === 0 ? 12 : hour % 12}:${String(minute).padStart(2, "0")}${hour < 12 ? "am" : "pm"}. Students are told when it opens.`}
+              ? shownDay === 0
+                ? "Choose the day, the hour and the minutes. Today shows only times still ahead. Ghana time."
+                : "Choose the day, the hour and the minutes. Ghana time."
+              : `Starts ${day === 0 ? "today" : day === 1 ? "tomorrow" : formatDay(new Date(now + day * 86400000).toISOString())} at ${hour % 12 === 0 ? 12 : hour % 12}:${String(minute).padStart(2, "0")}${hour < 12 ? "am" : "pm"}. Students are told when it opens.`}
           </Body>
           {where.kind === "here" ? (
             <Message tone="warning">

@@ -967,6 +967,7 @@ export type Database = {
       }
       school_settings: {
         Row: {
+          low_attendance_percent: number
           course_approval_required: boolean
           lecturers_add_after_end: boolean
           lecturers_add_venues: boolean
@@ -987,6 +988,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          low_attendance_percent?: number
           course_approval_required?: boolean
           lecturers_add_after_end?: boolean
           lecturers_add_venues?: boolean
@@ -1007,6 +1009,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          low_attendance_percent?: number
           course_approval_required?: boolean
           lecturers_add_after_end?: boolean
           lecturers_add_venues?: boolean
@@ -1598,6 +1601,44 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      attendance_overview: {
+        Args: { p_school_id: string; p_period_id?: string | null }
+        Returns: {
+          kind: string
+          id: string
+          name: string
+          detail: string | null
+          students: number
+          held: number
+          rate: number | null
+          below: number
+        }[]
+      }
+      class_register_days: {
+        Args: { p_class_id: string; p_period_id?: string | null }
+        Returns: { student_id: string; full_name: string; school_number: string | null; day: string; mark: string | null; marks: number }[]
+      }
+      class_subject_summary: {
+        Args: { p_class_id: string; p_period_id?: string | null }
+        Returns: { student_id: string; full_name: string; subject: string; held: number; present: number; late: number; absent: number }[]
+      }
+      course_run_report: {
+        Args: { p_course_run_id: string }
+        Returns: {
+          student_id: string
+          full_name: string
+          school_number: string | null
+          session_id: string
+          starts_at: string
+          checked_in_at: string | null
+          method: string | null
+          reward_marks: number
+        }[]
+      }
+      student_course_attendance: {
+        Args: { p_student_id: string; p_period_id?: string | null }
+        Returns: { course_run_id: string; code: string; title: string; held: number; attended: number; marks: number }[]
+      }
       approve_course_run: {
         Args: { p_course_run_id: string }
         Returns: undefined

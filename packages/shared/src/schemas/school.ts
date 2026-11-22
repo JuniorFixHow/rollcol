@@ -125,6 +125,11 @@ export const schoolSettingsSchema = z.object({
   registerMode: z.enum(REGISTER_MODES).optional(),
   studentApprovalRequired: z.boolean(),
   studentSelfSignup: z.boolean(),
+  lowAttendancePercent: z.coerce
+    .number({ error: "Enter a percentage." })
+    .int("Enter a whole number.")
+    .min(1, "Enter a percentage from 1 to 100.")
+    .max(100, "Enter a percentage from 1 to 100."),
 });
 
 export const guardianSchema = z.object({

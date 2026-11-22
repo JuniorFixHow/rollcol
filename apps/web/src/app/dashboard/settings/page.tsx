@@ -19,6 +19,7 @@ async function saveSettings(_: FormState, formData: FormData): Promise<FormState
     registerMode: values.registerMode || undefined,
     studentApprovalRequired: formBoolean(formData, "studentApprovalRequired"),
     studentSelfSignup: formBoolean(formData, "studentSelfSignup"),
+    lowAttendancePercent: values.lowAttendancePercent,
   });
   if (!parsed.success) return invalid(parsed.error, values);
   const input = parsed.data;
@@ -69,6 +70,7 @@ async function saveSettings(_: FormState, formData: FormData): Promise<FormState
     .update({
       student_approval_required: input.studentApprovalRequired,
       student_self_signup: input.studentSelfSignup,
+      low_attendance_percent: input.lowAttendancePercent,
       ...(timing?.success
         ? {
             daily_register_closes_at: timing.data.dailyRegisterClosesAt,
@@ -112,7 +114,7 @@ export default async function SettingsPage() {
     supabase
       .from("school_settings")
       .select(
-        "student_approval_required, student_self_signup, daily_register_closes_at, period_register_minutes, periods_per_day, sms_name, sms_absence_alerts, sms_present_alerts, sms_quiet_hours, sms_quiet_start, sms_quiet_end, lecturers_add_venues, lecturers_remove_self_checkins, lecturers_add_after_end, course_approval_required",
+        "student_approval_required, student_self_signup, daily_register_closes_at, period_register_minutes, periods_per_day, sms_name, sms_absence_alerts, sms_present_alerts, sms_quiet_hours, sms_quiet_start, sms_quiet_end, lecturers_add_venues, lecturers_remove_self_checkins, lecturers_add_after_end, course_approval_required, low_attendance_percent",
       )
       .eq("school_id", school.id)
       .single(),
@@ -294,6 +296,19 @@ export default async function SettingsPage() {
             </div>
           </Card>
         )}
+
+        <Card title="Reports">
+          <div className="max-w-xs">
+            <TextField
+              name="lowAttendancePercent"
+              label="Flag students below (%)"
+              type="number"
+              inputMode="numeric"
+              hint="Students whose attendance is below this are shown on the Reports page. Many schools use 75."
+              defaultValue={String(settings?.low_attendance_percent ?? 75)}
+            />
+          </div>
+        </Card>
 
         <div className="space-y-3">
           <FormMessage />

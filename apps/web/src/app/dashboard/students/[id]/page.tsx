@@ -8,6 +8,7 @@ import { requireStaff } from "@/lib/auth";
 import { visibleClassIds } from "@/lib/queries";
 import { sendStudentMessage } from "../../messages/actions";
 import { MessageComposer } from "../../messages/message-composer";
+import { AttendanceRecord } from "./attendance-record";
 import {
   addGuardian,
   deleteStudent,
@@ -122,6 +123,12 @@ export default async function StudentPage({ params }: PageProps<"/dashboard/stud
         {student.source === "stediis" ? (
           <Notice tone="neutral">This student is managed in Stediis. Change their details there.</Notice>
         ) : null}
+
+        <AttendanceRecord
+          supabase={supabase}
+          member={member}
+          student={{ id: student.id, class_id: student.class_id, first_name: student.full_name.split(" ")[0] ?? student.full_name }}
+        />
 
         {tertiary ? null : (
           <Card

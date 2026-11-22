@@ -2,6 +2,7 @@ export * from "./constants";
 export * from "./errors";
 export * from "./labels";
 export * from "./member";
+export * from "./reports";
 export * from "./phone";
 export * from "./schemas/messages";
 export * from "./schemas/records";

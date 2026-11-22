@@ -204,3 +204,24 @@ svg,
 video {
   max-width: 100%;
 }
+
+/* Printing a report: only the page itself, without the menu. */
+@media print {
+  aside {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+  main > div {
+    max-width: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

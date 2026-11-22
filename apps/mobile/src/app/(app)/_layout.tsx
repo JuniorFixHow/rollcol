@@ -31,6 +31,7 @@ export default function AppLayout() {
         <Stack.Screen name="session/[id]" options={{ title: "Session" }} />
         <Stack.Screen name="register/start" options={{ title: "Take register" }} />
         <Stack.Screen name="register/[id]" options={{ title: "Register" }} />
+        <Stack.Screen name="report/[kind]/[id]" options={{ title: "Report" }} />
       </Stack>
     </PhoneProvider>
   );

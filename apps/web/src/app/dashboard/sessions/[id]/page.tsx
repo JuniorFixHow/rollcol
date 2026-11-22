@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { InlineAction } from "@/components/form";
 import { ReasonAction } from "@/components/reason-action";
+import { ReportDownloads } from "@/components/report-downloads";
 import { Badge, Card, EmptyState, Notice, PageHeader, Table, Td, formatDateTime, formatTime } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
 import { addCheckin, cancelScheduled, endSession, removeCheckin, voidSession } from "../actions";
@@ -79,7 +80,14 @@ export default async function SessionPage({ params }: PageProps<"/dashboard/sess
             </Link>
           </>
         }
-        actions={<Badge tone={tone}>{SESSION_STATE_LABELS[state]}</Badge>}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {state === "open" || state === "ended" ? (
+              <ReportDownloads href={`/dashboard/sessions/${session.id}/export`} print={false} />
+            ) : null}
+            <Badge tone={tone}>{SESSION_STATE_LABELS[state]}</Badge>
+          </div>
+        }
       />
 
       <div className="space-y-6">
