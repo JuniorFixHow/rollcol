@@ -105,7 +105,18 @@ function NavLinks({ groups, onNavigate }: { groups: NavGroup[]; onNavigate?: () 
  * The sidebar on larger screens. On phones, a bar with a Menu button that
  * opens the same links (with the theme and sign-out) in a panel.
  */
-export function DashboardNav({ groups, header, footer }: { groups: NavGroup[]; header: ReactNode; footer: ReactNode }) {
+export function DashboardNav({
+  groups,
+  header,
+  footer,
+  actions,
+}: {
+  groups: NavGroup[];
+  header: ReactNode;
+  footer?: ReactNode;
+  /** Shown beside the Menu button on phones (notifications and the account menu). */
+  actions?: ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const current = groups.flatMap((group) => group.items).find((item) => isActive(pathname, item.href));
@@ -132,12 +143,13 @@ export function DashboardNav({ groups, header, footer }: { groups: NavGroup[]; h
         <div className="min-h-0 flex-1 overflow-y-auto">
           <NavLinks groups={groups} />
         </div>
-        <div className="space-y-3">{footer}</div>
+        {footer ? <div className="space-y-3">{footer}</div> : null}
       </div>
 
       {/* Phones */}
       <div className="flex min-w-0 flex-1 items-center justify-between gap-3 md:hidden">
-        <p className="min-w-0 truncate text-sm font-medium">{current?.label ?? "Menu"}</p>
+        <p className="min-w-0 flex-1 truncate text-sm font-medium">{current?.label ?? "Menu"}</p>
+        {actions}
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -171,7 +183,7 @@ export function DashboardNav({ groups, header, footer }: { groups: NavGroup[]; h
               </button>
             </div>
             <NavLinks groups={groups} onNavigate={() => setOpen(false)} />
-            <div className="mt-auto space-y-3 border-t border-line pt-4">{footer}</div>
+            {footer ? <div className="mt-auto space-y-3 border-t border-line pt-4">{footer}</div> : null}
           </div>
         </div>
       ) : null}

@@ -1,12 +1,12 @@
 import { periodWordTitle, staffRoleLabel } from "@rollcol/shared";
 import { Suspense } from "react";
 import { Brand } from "@/components/brand";
-import { SignOutButton } from "@/components/sign-out-button";
 import { PageSkeleton } from "@/components/ui";
 import { SchoolSwitcher } from "@/components/school-switcher";
-import { ThemePicker } from "@/components/theme";
 import { requireStaff, staffMemberships } from "@/lib/auth";
+import { getUnreadCount } from "@/lib/notifications";
 import { DashboardNav, type NavGroup } from "./nav";
+import { UserMenu, type UserMenuProps } from "./user-menu";
 
 // Every dashboard page depends on the signed-in user, so navigation into it blocks on the server.
 export const instant = false;
@@ -24,11 +24,35 @@ export default function DashboardLayout({ children }: LayoutProps<"/dashboard">)
       </aside>
       <main className="min-w-0 flex-1 px-4 py-6 sm:px-8 sm:py-8">
         <div className="mx-auto max-w-5xl">
+          <div className="-mt-2 mb-4 hidden h-9 justify-end md:flex sm:-mt-4">
+            <Suspense fallback={null}>
+              <TopBar />
+            </Suspense>
+          </div>
           <Suspense fallback={<PageSkeleton />}>{children}</Suspense>
         </div>
       </main>
     </div>
   );
+}
+
+/** Who is signed in, for the account menu at the top right. */
+async function userMenuProps(): Promise<UserMenuProps> {
+  const { member, email } = await requireStaff();
+  const unread = await getUnreadCount();
+  return {
+    name: member.fullName,
+    subtitle: member.school.isWorkspace
+      ? "Your workspace"
+      : `${staffRoleLabel(member.role, member.school.type)}, ${member.school.name}`,
+    email,
+    unread,
+    isPlatformAdmin: member.isPlatformAdmin,
+  };
+}
+
+async function TopBar() {
+  return <UserMenu {...await userMenuProps()} />;
 }
 
 async function Sidebar() {
@@ -39,10 +63,6 @@ async function Sidebar() {
   const tertiary = school.type === "tertiary";
   // A workspace is one person: no staff, no programmes or batches, and SMS only on the Alerts plan.
   const workspace = school.isWorkspace;
-  const { count: unread } = await supabase
-    .from("push_outbox")
-    .select("id", { count: "exact", head: true })
-    .is("read_at", null);
   const workspaceSms =
     workspace && !tertiary ? (await supabase.rpc("school_features", { p_school_id: school.id })).data?.[0]?.sms === true : false;
 
@@ -83,8 +103,6 @@ async function Sidebar() {
               { href: "/dashboard/billing", label: "Billing" },
             ]
           : []),
-        { href: "/dashboard/notifications", label: "Notifications", badge: unread ?? 0 },
-        { href: "/dashboard/account", label: "Your account" },
       ],
     },
   ];
@@ -104,17 +122,7 @@ async function Sidebar() {
           </p>
         </div>
       }
-      footer={
-        <>
-          <ThemePicker />
-          {member.isPlatformAdmin ? (
-            <a href="/platform" className="block text-xs text-accent hover:underline">
-              RollCol platform
-            </a>
-          ) : null}
-          <SignOutButton variant="ghost" />
-        </>
-      }
+      actions={<UserMenu {...await userMenuProps()} />}
     />
   );
 }

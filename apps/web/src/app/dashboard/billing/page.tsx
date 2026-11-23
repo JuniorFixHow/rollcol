@@ -56,6 +56,12 @@ export default async function BillingPage({ searchParams }: PageProps<"/dashboar
   const current = billing.plan && isPlanCode(billing.plan) ? billing.plan : null;
   const currentPeriodId = (periodsResult.data ?? []).find((p) => p.starts_on <= today && today <= p.ends_on)?.id;
   const canBuy = school.isWorkspace || school.status === "verified";
+  const paidAhead = (periodsResult.data ?? []).flatMap((p) => {
+    const paid = paidPeriods.get(p.id);
+    return paid && p.starts_on > today && isPlanCode(paid.plan)
+      ? [{ id: p.id, name: p.name, starts: p.starts_on, plan: PLAN_INFO[paid.plan].name, students: paid.students_paid }]
+      : [];
+  });
   const onTrial = !current && billing.trial_ends_on !== null && billing.trial_ends_on >= today;
   const freeLimit = school.isWorkspace ? catalog.free.workspace : school.type === "tertiary" ? catalog.free.tertiary : catalog.free.non_tertiary;
   const purchases = purchasesResult.data ?? [];
@@ -134,6 +140,16 @@ export default async function BillingPage({ searchParams }: PageProps<"/dashboar
               {billing.sms_allowed ? <p className="text-xs text-muted">{billing.sms_credits} SMS credits left</p> : null}
             </div>
           </div>
+          {paidAhead.length > 0 ? (
+            <ul className="mt-4 space-y-1 text-sm">
+              {paidAhead.map((p) => (
+                <li key={p.id}>
+                  <span className="font-medium">Paid ahead:</span> {p.plan} for {p.name}, {p.students} students, starts{" "}
+                  {formatLongDate(p.starts)}.
+                </li>
+              ))}
+            </ul>
+          ) : null}
           {onTrial ? (
             <p className="mt-4 text-sm text-muted">
               During the trial your school gets everything in Complete, for up to {freeLimit} students. Choose a plan before{" "}
@@ -154,8 +170,12 @@ export default async function BillingPage({ searchParams }: PageProps<"/dashboar
 
         {canBuy && current && currentPeriodId ? (
           <Card
-            title={`Change this ${word}'s plan`}
-            description={`You paid for ${billing.students_paid} students for ${billing.period_name}. New students beyond that need a place first.`}
+            title={school.isWorkspace ? `Add students to this ${word}'s plan` : `Change this ${word}'s plan`}
+            description={
+              school.isWorkspace
+                ? `Workspaces have one paid plan, so there is nothing to switch. You paid for ${billing.students_paid} students for ${billing.period_name}; new students beyond that need a place first.`
+                : `You paid for ${billing.students_paid} students for ${billing.period_name}. New students beyond that need a place first.`
+            }
           >
             <div className="grid gap-6 lg:grid-cols-2">
               <ActionForm action={startPurchase} className="space-y-3">

@@ -26,6 +26,7 @@ export const getSession = cache(async () => {
   const { data: claimsData } = await supabase.auth.getClaims();
   const userId = claimsData?.claims?.sub;
   if (!userId) return null;
+  const email = typeof claimsData.claims.email === "string" ? claimsData.claims.email : null;
 
   const [membershipsResult, adminResult, cookieStore] = await Promise.all([
     supabase.rpc("my_memberships"),
@@ -43,7 +44,7 @@ export const getSession = cache(async () => {
     preferKind: "staff",
   });
 
-  return { supabase, userId, memberships, member };
+  return { supabase, userId, email, memberships, member };
 });
 
 /** A signed-in user, with or without a school. */

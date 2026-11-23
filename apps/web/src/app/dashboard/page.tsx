@@ -1,4 +1,4 @@
-import { UNVERIFIED_SCHOOL_LIMITS, WORKSPACE_FREE_STUDENTS, periodWord, staffRoleLabel } from "@rollcol/shared";
+import { PLAN_INFO, UNVERIFIED_SCHOOL_LIMITS, WORKSPACE_FREE_STUDENTS, periodWord, staffRoleLabel } from "@rollcol/shared";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Card, Notice, PageHeader } from "@/components/ui";
@@ -101,7 +101,15 @@ export default async function OverviewPage({ searchParams }: PageProps<"/dashboa
       />
 
       <div className="space-y-6">
-        {workspace ? (
+        {workspace && usage?.plan === "paid" ? (
+          <Notice tone="success" title={`${PLAN_INFO[tertiary ? "workspace_standard" : "workspace_alerts"].name} plan`}>
+            This {periodWord(school.type)}&apos;s plan covers {usage.student_limit} students in this workspace.
+            {tertiary ? " Students check in with the RollCol app, as at a school." : " Guardians get absence and late alerts by SMS."}{" "}
+            <Link href="/dashboard/billing" className="font-medium text-accent hover:underline">
+              Billing
+            </Link>
+          </Notice>
+        ) : workspace ? (
           <Notice title="A free workspace">
             You can have up to {WORKSPACE_FREE_STUDENTS} students in all your workspaces.
             {tertiary
@@ -129,10 +137,13 @@ export default async function OverviewPage({ searchParams }: PageProps<"/dashboa
           </Notice>
         ) : null}
         {nearLimit && usage?.student_limit && workspace ? (
-          <Notice tone="warning" title="Your workspaces are close to the free limit">
-            {usage.used} of {usage.student_limit} students across all your workspaces.{" "}
+          <Notice
+            tone="warning"
+            title={usage.plan === "paid" ? "This workspace is close to the students paid for" : "Your workspaces are close to the free limit"}
+          >
+            {usage.used} of {usage.student_limit} students{usage.plan === "paid" ? "" : " across all your workspaces"}.{" "}
             <Link href="/dashboard/billing" className="font-medium text-accent hover:underline">
-              See plans
+              {usage.plan === "paid" ? "Pay for more students" : "See plans"}
             </Link>
           </Notice>
         ) : null}
