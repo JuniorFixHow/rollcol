@@ -41,6 +41,10 @@ export async function registerSchool(_: FormState, formData: FormData): Promise<
   if (error) {
     if (error.code === "weak_password") return failed("Choose a stronger password.", values);
     if (error.code === "user_already_exists") return failed("An account with this email already exists. Sign in, then choose Register another school from Your account.", values);
+    // RollCol's email sender has an hourly limit (Supabase Auth > Rate Limits).
+    if (error.code === "over_email_send_rate_limit") {
+      return failed("RollCol has sent too many confirmation emails in the last hour. Please try again later.", values);
+    }
     if (error.status === 429) return failed("Too many sign-ups from here. Wait a few minutes, then try again.", values);
     return failed("We could not create your account. Please try again.", values);
   }

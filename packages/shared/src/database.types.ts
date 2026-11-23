@@ -1041,6 +1041,7 @@ export type Database = {
       }
       schools: {
         Row: {
+          student_limit: number | null
           is_workspace: boolean
           code: string
           contact_email: string | null
@@ -1059,6 +1060,7 @@ export type Database = {
           verified_by: string | null
         }
         Insert: {
+          student_limit?: number | null
           is_workspace?: boolean
           code: string
           contact_email?: string | null
@@ -1077,6 +1079,7 @@ export type Database = {
           verified_by?: string | null
         }
         Update: {
+          student_limit?: number | null
           is_workspace?: boolean
           code?: string
           contact_email?: string | null
@@ -1604,6 +1607,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      school_student_usage: {
+        Args: { p_school_id: string }
+        Returns: { used: number; student_limit: number | null; plan: string }[]
+      }
+      set_school_student_limit: {
+        Args: { p_school_id: string; p_limit: number | null }
+        Returns: undefined
+      }
       create_workspace: {
         Args: {
           p_name: string
@@ -1982,6 +1993,8 @@ export type Database = {
           sms_credits: number
           sms_sent_30_days: number
           is_workspace: boolean
+          student_limit: number | null
+          custom_limit: boolean
         }[]
       }
       registers_today: {

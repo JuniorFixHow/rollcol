@@ -30,6 +30,23 @@ async function setStatus(_: FormState, formData: FormData): Promise<FormState> {
   return succeeded("Saved.");
 }
 
+async function setStudentLimit(_: FormState, formData: FormData): Promise<FormState> {
+  "use server";
+  const { supabase } = await requirePlatformAdmin();
+  const raw = String(formData.get("limit") ?? "").trim();
+  const limit = raw === "" ? null : Number(raw);
+  if (limit !== null && (!Number.isInteger(limit) || limit < 1)) {
+    return { status: "error", fieldErrors: { limit: "Enter a whole number, or leave it empty for the free plan." } };
+  }
+  const { error } = await supabase.rpc("set_school_student_limit", {
+    p_school_id: String(formData.get("schoolId") ?? ""),
+    p_limit: limit,
+  });
+  if (error) return failed(error);
+  refresh();
+  return succeeded(limit === null ? "Back to the free plan limit." : `Limit set to ${limit}.`);
+}
+
 export default function PlatformPage() {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-8">
@@ -86,8 +103,32 @@ async function Schools() {
                 <span className="block text-muted">{school.contact_email}</span>
               </Td>
               <Td className="text-sm tabular-nums">
-                {school.student_count} students
+                {school.student_count}
+                {school.student_limit ? ` of ${school.student_limit}` : ""} students
+                {school.is_workspace ? <span className="block text-xs text-muted">(limit across the owner&apos;s workspaces)</span> : null}
+                {school.custom_limit ? <span className="block text-xs text-accent">Own limit</span> : null}
                 <span className="block text-muted">{school.staff_count} staff</span>
+                {school.status === "verified" && !school.is_workspace ? (
+                  <ActionForm action={setStudentLimit} className="mt-2 space-y-1">
+                    <input type="hidden" name="schoolId" value={school.id} />
+                    <div className="flex items-end gap-2">
+                      <div className="w-28">
+                        <TextField
+                          name="limit"
+                          label="Student limit"
+                          type="number"
+                          inputMode="numeric"
+                          placeholder="Free plan"
+                          defaultValue={school.custom_limit && school.student_limit ? String(school.student_limit) : ""}
+                        />
+                      </div>
+                      <SubmitButton size="sm" variant="secondary">
+                        Set
+                      </SubmitButton>
+                    </div>
+                    <FormMessage />
+                  </ActionForm>
+                ) : null}
               </Td>
               <Td className="text-sm">
                 {school.type === "tertiary" || school.is_workspace ? (

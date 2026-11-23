@@ -60,6 +60,12 @@ export const TIMEZONE = "Africa/Accra";
  * Limits until the platform owner verifies a school. The database enforces these
  * (private.unverified_limit in supabase/migrations); keep the two in sync.
  */
+/** Free plan students for a verified school (private.free_student_limit). Disabled students do not count. */
+export const FREE_PLAN_STUDENTS = {
+  non_tertiary: 100,
+  tertiary: 200,
+} as const;
+
 /** Free students across all of one person's workspaces (private.workspace_student_limit). */
 export const WORKSPACE_FREE_STUDENTS = 50;
 

@@ -77,6 +77,10 @@ export async function registerWorkspace(_: FormState, formData: FormData): Promi
   if (error) {
     if (error.code === "weak_password") return failed("Choose a stronger password.", values);
     if (error.code === "user_already_exists") return failed(exists, values);
+    // RollCol's email sender has an hourly limit (Supabase Auth > Rate Limits).
+    if (error.code === "over_email_send_rate_limit") {
+      return failed("RollCol has sent too many confirmation emails in the last hour. Please try again later.", values);
+    }
     if (error.status === 429) return failed("Too many sign-ups from here. Wait a few minutes, then try again.", values);
     return failed("We could not create your account. Please try again.", values);
   }

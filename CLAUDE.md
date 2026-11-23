@@ -121,7 +121,8 @@ Add mobile packages with `npx expo install <pkg>` from `apps/mobile`, never `pnp
 - First bulk guardian import counts against SMS credits, one combined message per guardian, held until a reasonable hour.
 
 ### Pricing (per student; per term for non-tertiary, per semester for tertiary)
-- Non-tertiary: **Free** (registers, records, marks; no SMS except system messages), **trial** of full alerts for 2 to 4 weeks after verification, **Alerts GHS 3** (absence and late alerts), **Complete GHS 6** (adds daily present alerts to one chosen guardian per student, SHS as a daily digest, term reports, included broadcast credits). SMS top-ups for broadcasts and custom messages.
+- Free plan student limits (verified schools; disabled students do not count): non-tertiary **100**, tertiary **200**; workspaces **50** across all of one person's workspaces; unverified schools 10. Migration `20261128000000_free_plan_limits.sql`: `private.free_student_limit` (config keys `free_students_non_tertiary`, `free_students_tertiary`), `schools.student_limit` (a school's own limit, set by the platform team with `set_school_student_limit`, later by billing), `school_student_usage` for the overview, re-enabling a disabled student counts as adding one. `FREE_PLAN_STUDENTS` in shared constants.
+- Non-tertiary: **Free** (up to 100 students; registers, records, marks; no SMS except system messages), **trial** of full alerts for 2 to 4 weeks after verification, **Alerts GHS 3** (absence and late alerts), **Complete GHS 6** (adds daily present alerts to one chosen guardian per student, SHS as a daily digest, term reports, included broadcast credits). SMS top-ups for broadcasts and custom messages.
 - Tertiary: free up to 200 students with every anti-cheat feature; Standard GHS 2 to 3 (saved venues, exports, analytics, admin oversight). Anti-cheat is never a paid feature.
 - Teacher and lecturer workspaces are Part 7 (Google Classroom style; free limit counts all workspaces an account owns; free workspaces send no attendance SMS; priced slightly above school rates; can move into a school account) and a Stediis bundle discount.
 
@@ -137,7 +138,7 @@ Add mobile packages with `npx expo install <pkg>` from `apps/mobile`, never `pnp
 7b. **Move a workspace into a school:** the owner asks with the school's code, the school's admin approves, classes or courses, students, guardians and records move across (resolving clashing names and school IDs).
 8. **Billing:** Paystack plans (schools and workspaces), trials, SMS credits and top-ups (web only).
 9. **Stediis link:** sync API, webhooks, "Continue with Stediis".
-10. **Launch preparation:** own domain (update `SITE_URL`, universal links and App Links for check-in codes), public pages with a site footer, contact page, help centre and guides (as in Stediis), in-app help, onboarding screens, permission strings, store listings, a native date and time picker for scheduling (only future times on Today), replace all test settings and secrets (Sailup key, CRON_SECRET; support email support@rollcol.app).
+10. **Launch preparation:** own domain (update `SITE_URL`, universal links and App Links for check-in codes), public pages with a site footer, contact page, help centre and guides (as in Stediis), in-app help, onboarding screens, permission strings, store listings, a native date and time picker for scheduling (only future times on Today), replace all test settings and secrets (Sailup key, CRON_SECRET; support email support@rollcol.app); custom SMTP for Supabase Auth emails from the own domain (for example Resend or Brevo) and a higher email rate limit in Authentication > Rate Limits (the built-in sender allows only 2 emails an hour).
 
 
 ## Web form conventions

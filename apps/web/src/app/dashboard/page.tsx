@@ -18,17 +18,33 @@ export default async function OverviewPage() {
   const studentCount = () =>
     supabase.from("students").select("id", { count: "exact", head: true }).eq("school_id", school.id);
 
-  const [students, staff, groups, periods, guardians, pending] = await Promise.all([
+  const [students, staff, groups, periods, guardians, pending, usageResult] = await Promise.all([
     studentCount().neq("status", "disabled"),
     count("staff"),
     count(tertiary ? "courses" : "classes"),
     count("academic_periods"),
     tertiary ? Promise.resolve({ count: 0 }) : count("guardians"),
     studentCount().eq("status", "pending"),
+    supabase.rpc("school_student_usage", { p_school_id: school.id }),
   ]);
+  const usage = usageResult.data?.[0];
+  const planName =
+    usage?.plan === "workspace"
+      ? "all your workspaces"
+      : usage?.plan === "unverified"
+        ? "until verified"
+        : usage?.plan === "custom"
+          ? "this school's plan"
+          : "free plan";
+  const nearLimit = usage?.student_limit ? usage.used >= Math.floor(usage.student_limit * 0.9) : false;
 
   const stats = [
-    { label: "Students", value: students.count ?? 0, href: "/dashboard/students" },
+    {
+      label: "Students",
+      value: students.count ?? 0,
+      href: "/dashboard/students",
+      note: usage?.student_limit ? `${usage.used} of ${usage.student_limit} (${planName})` : undefined,
+    },
     ...(workspace ? [] : [{ label: "Staff", value: staff.count ?? 0, href: isAdmin ? "/dashboard/staff" : undefined }]),
     {
       label: tertiary ? "Courses" : "Classes",
@@ -88,6 +104,17 @@ export default async function OverviewPage() {
             school on its registered phone number.
           </Notice>
         ) : null}
+        {nearLimit && usage?.student_limit && !workspace && school.status === "verified" ? (
+          <Notice tone="warning" title={usage.used >= usage.student_limit ? "Your school has reached its student limit" : "Your school is close to its student limit"}>
+            {usage.used} of {usage.student_limit} students. Students you turn off (for example those who have left) do not count.
+            Paid plans with more students are coming; until then, contact RollCol to add more.
+          </Notice>
+        ) : null}
+        {nearLimit && usage?.student_limit && workspace ? (
+          <Notice tone="warning" title="Your workspaces are close to the free limit">
+            {usage.used} of {usage.student_limit} students across all your workspaces.
+          </Notice>
+        ) : null}
         {school.status === "suspended" ? (
           <Notice tone="danger" title="This school is suspended">
             You can view records, but you cannot add people. Contact RollCol support.
@@ -107,6 +134,7 @@ export default async function OverviewPage() {
               <>
                 <p className="text-sm text-muted">{stat.label}</p>
                 <p className="mt-1 text-3xl font-semibold tabular-nums">{stat.value}</p>
+                {"note" in stat && stat.note ? <p className="mt-1 text-xs text-muted">{stat.note}</p> : null}
               </>
             );
             return stat.href ? (
