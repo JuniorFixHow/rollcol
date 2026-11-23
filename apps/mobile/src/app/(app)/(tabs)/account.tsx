@@ -77,14 +77,15 @@ export default function AccountScreen() {
           </Body>
         ) : null}
         {member && member.kind !== "none" ? (
-          <Body muted>One email and password work for all your schools.</Body>
+          <Body muted>One email and password work for all your schools and workspaces.</Body>
         ) : null}
       </Card>
 
-      {memberships.length > 1 || member?.kind === "staff" ? (
+      {/* Everyone sees this: students also use it to join a lecturer's workspace or another school. */}
+      {member && member.kind !== "none" ? (
         <Row
-          title={memberships.length > 1 ? `Switch school (${memberships.length} schools)` : "Your schools"}
-          subtitle={member && member.kind !== "none" ? `Now: ${member.school.name}` : undefined}
+          title="Your schools and workspaces"
+          subtitle={`Now: ${member.school.name}${memberships.length > 1 ? ` · tap to switch (${memberships.length} in all)` : ""}`}
           onPress={() => router.push("/schools")}
         />
       ) : null}

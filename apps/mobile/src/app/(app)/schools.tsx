@@ -57,7 +57,7 @@ export default function SchoolsScreen() {
       {joining ? (
         <Card>
           <Text style={[styles.name, { color: palette.text }]}>Join another school or workspace</Text>
-          <Body muted>For students at universities, colleges and polytechnics that use RollCol.</Body>
+          <Body muted>{"For students at universities, colleges and polytechnics that use RollCol, or in a lecturer's own workspace. Ask for its code."}</Body>
           <JoinSchoolForm defaultName={firstName} onJoined={() => router.back()} />
         </Card>
       ) : (
