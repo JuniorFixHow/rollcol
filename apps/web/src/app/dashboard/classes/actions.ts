@@ -9,7 +9,8 @@ import { type FormState, failed, formValues, invalid, succeeded } from "@/lib/fo
 export async function createClass(_: FormState, formData: FormData): Promise<FormState> {
   const { supabase, member } = await requireAdmin();
   const values = formValues(formData);
-  const parsed = classSchema.safeParse(values);
+  // Workspaces have no class teacher picker (the owner teaches every class), so the field may be missing.
+  const parsed = classSchema.safeParse({ ...values, classTeacherId: values.classTeacherId ?? "" });
   if (!parsed.success) return invalid(parsed.error, values);
 
   const { error } = await supabase.from("classes").insert({
@@ -25,7 +26,8 @@ export async function createClass(_: FormState, formData: FormData): Promise<For
 export async function updateClass(classId: string, _: FormState, formData: FormData): Promise<FormState> {
   const { supabase, member } = await requireAdmin();
   const values = formValues(formData);
-  const parsed = classSchema.safeParse(values);
+  // Workspaces have no class teacher picker (the owner teaches every class), so the field may be missing.
+  const parsed = classSchema.safeParse({ ...values, classTeacherId: values.classTeacherId ?? "" });
   if (!parsed.success) return invalid(parsed.error, values);
 
   const { error } = await supabase
