@@ -93,7 +93,14 @@ export default function ReportsScreen() {
               onPress={() =>
                 router.push({
                   pathname: "/report/[kind]/[id]",
-                  params: { kind: row.kind, id: row.id, title: row.name, period: period.id, periodName: period.name },
+                  params: {
+                    kind: row.kind,
+                    id: row.id,
+                    title: row.name,
+                    periodName: period.name,
+                    periodStart: period.startsOn,
+                    periodEnd: period.endsOn,
+                  },
                 })
               }
             />

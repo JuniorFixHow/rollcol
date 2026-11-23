@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Batches" };
 
 export default async function BatchesPage() {
   const { supabase, member } = await requireAdmin();
-  if (member.school.type !== "tertiary") redirect("/dashboard");
+  if (member.school.type !== "tertiary" || member.school.isWorkspace) redirect("/dashboard");
   const thisYear = new Date().getFullYear();
 
   const [{ data: programmes }, { data: batches }] = await Promise.all([

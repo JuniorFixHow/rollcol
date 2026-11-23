@@ -7,6 +7,8 @@ import { supabase } from "./supabase";
 export interface Period {
   id: string;
   name: string;
+  startsOn: string;
+  endsOn: string;
 }
 
 /** The term or semester containing today, else the latest. */
@@ -19,7 +21,7 @@ export async function currentPeriod(schoolId: string): Promise<Period | null> {
   const today = ghanaDate();
   const periods = data ?? [];
   const period = periods.find((p) => p.starts_on <= today && today <= p.ends_on) ?? periods[0];
-  return period ? { id: period.id, name: period.name } : null;
+  return period ? { id: period.id, name: period.name, startsOn: period.starts_on, endsOn: period.ends_on } : null;
 }
 
 export async function lowAttendancePercent(schoolId: string): Promise<number> {

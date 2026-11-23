@@ -82,6 +82,22 @@ export const schoolDetailsSchema = z
 export type SchoolDetailsInput = z.input<typeof schoolDetailsSchema>;
 export type SchoolDetails = z.output<typeof schoolDetailsSchema>;
 
+/** A teacher's or lecturer's own workspace: one person, no school. */
+export const workspaceDetailsSchema = z
+  .object({
+    name: z.string().trim().min(3, "Give your workspace a name, for example Mr. Ankrah's classes.").max(120),
+    type: z.enum(SCHOOL_TYPES, "Choose what you teach."),
+    registerMode: z.enum(REGISTER_MODES).optional(),
+    contactPhone: phoneSchema,
+    fullName: personNameSchema,
+  })
+  .refine((workspace) => workspace.type === "tertiary" || workspace.registerMode !== undefined, {
+    message: "Choose how you take registers.",
+    path: ["registerMode"],
+  });
+
+export type WorkspaceDetails = z.output<typeof workspaceDetailsSchema>;
+
 export const accountSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
@@ -116,6 +132,17 @@ export const pendingSchoolSchema = z.object({
     contact_phone: z.string(),
     admin_full_name: z.string(),
     admin_school_id: z.string(),
+  }),
+});
+
+/** Kept in the auth user's metadata so a workspace can be created after email confirmation. */
+export const pendingWorkspaceSchema = z.object({
+  pending_workspace: z.object({
+    name: z.string(),
+    type: z.enum(SCHOOL_TYPES),
+    register_mode: z.enum(REGISTER_MODES).nullable(),
+    contact_phone: z.string(),
+    full_name: z.string(),
   }),
 });
 

@@ -66,12 +66,15 @@ export default async function ClassesPage() {
             <Card title="Create a class" description='For example "Basic 4" or "Form 2 Science A".'>
               <ActionForm action={createClass} resetOnSuccess>
                 <TextField name="name" label="Class name" />
-                <SelectField
-                  name="classTeacherId"
-                  label="Class teacher"
-                  placeholder="Choose later"
-                  options={teachers.map((teacher) => ({ value: teacher.id, label: teacher.full_name }))}
-                />
+                {/* In a workspace the owner teaches every class. */}
+                {school.isWorkspace ? null : (
+                  <SelectField
+                    name="classTeacherId"
+                    label="Class teacher"
+                    placeholder="Choose later"
+                    options={teachers.map((teacher) => ({ value: teacher.id, label: teacher.full_name }))}
+                  />
+                )}
                 <FormMessage />
                 <SubmitButton>Create class</SubmitButton>
               </ActionForm>

@@ -37,7 +37,8 @@ function greetingName(fullName: string): string {
 }
 
 function Greeting({ member }: { member: SchoolMember }) {
-  const role = member.kind === "student" ? "Student" : staffRoleLabel(member.role, member.school.type);
+  const role =
+    member.kind === "student" ? "Student" : member.school.isWorkspace ? "Your workspace" : staffRoleLabel(member.role, member.school.type);
   return (
     <View style={styles.header}>
       <Title>Hello, {greetingName(member.fullName)}</Title>

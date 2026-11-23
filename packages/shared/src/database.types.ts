@@ -1041,6 +1041,7 @@ export type Database = {
       }
       schools: {
         Row: {
+          is_workspace: boolean
           code: string
           contact_email: string | null
           contact_phone: string
@@ -1058,6 +1059,7 @@ export type Database = {
           verified_by: string | null
         }
         Insert: {
+          is_workspace?: boolean
           code: string
           contact_email?: string | null
           contact_phone: string
@@ -1075,6 +1077,7 @@ export type Database = {
           verified_by?: string | null
         }
         Update: {
+          is_workspace?: boolean
           code?: string
           contact_email?: string | null
           contact_phone?: string
@@ -1601,6 +1604,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_workspace: {
+        Args: {
+          p_name: string
+          p_type: Database["public"]["Enums"]["school_type"]
+          p_contact_phone: string
+          p_full_name: string
+          p_register_mode?: Database["public"]["Enums"]["register_mode"]
+        }
+        Returns: { school_id: string; school_code: string }[]
+      }
+      delete_workspace: {
+        Args: { p_school_id: string; p_confirm_name: string }
+        Returns: undefined
+      }
       sync_my_email: {
         Args: never
         Returns: undefined
@@ -1924,6 +1941,7 @@ export type Database = {
           school_type: Database["public"]["Enums"]["school_type"]
           register_mode: Database["public"]["Enums"]["register_mode"]
           school_status: Database["public"]["Enums"]["school_status"]
+          is_workspace: boolean
         }[]
       }
       open_register: {
@@ -1963,6 +1981,7 @@ export type Database = {
           staff_count: number
           sms_credits: number
           sms_sent_30_days: number
+          is_workspace: boolean
         }[]
       }
       registers_today: {

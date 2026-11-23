@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Programmes" };
 
 export default async function ProgrammesPage() {
   const { supabase, member } = await requireAdmin();
-  if (member.school.type !== "tertiary") redirect("/dashboard");
+  if (member.school.type !== "tertiary" || member.school.isWorkspace) redirect("/dashboard");
 
   const { data: programmes } = await supabase
     .from("programmes")

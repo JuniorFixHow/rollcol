@@ -23,7 +23,7 @@ export default function AppLayout() {
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="schools" options={{ title: "Your schools" }} />
+        <Stack.Screen name="schools" options={{ title: "Your schools and workspaces" }} />
         <Stack.Screen name="checkin/[id]" options={{ title: "Check in", presentation: "fullScreenModal", headerShown: false }} />
         <Stack.Screen name="course/[id]" options={{ title: "Course" }} />
         <Stack.Screen name="course/new" options={{ title: "Add a course" }} />

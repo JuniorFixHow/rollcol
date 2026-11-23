@@ -55,13 +55,14 @@ async function Schools() {
     verified: "success",
     suspended: "danger",
   };
-  const waiting = schools.filter((school) => school.status === "unverified").length;
+  const waiting = schools.filter((school) => school.status === "unverified" && !school.is_workspace).length;
+  const workspaces = schools.filter((school) => school.is_workspace).length;
 
   return (
     <>
       <PageHeader
         title="Schools"
-        description={`${waiting} waiting for verification. Call the school on its registered number before verifying.`}
+        description={`${waiting} waiting for verification. Call the school on its registered number before verifying. ${workspaces} teacher and lecturer ${workspaces === 1 ? "workspace" : "workspaces"} (never verified).`}
       />
       {schools.length === 0 ? (
         <EmptyState>No schools yet.</EmptyState>
@@ -74,6 +75,11 @@ async function Schools() {
                 <span className="block text-xs text-muted">
                   <span className="font-mono">{school.code}</span> · {school.type === "tertiary" ? "Tertiary" : "Basic or SHS"}
                 </span>
+                {school.is_workspace ? (
+                  <span className="mt-1 inline-block">
+                    <Badge tone="accent">Workspace</Badge>
+                  </span>
+                ) : null}
               </Td>
               <Td className="text-sm">
                 <span className="block font-mono">{formatPhoneForDisplay(school.contact_phone)}</span>
@@ -84,7 +90,7 @@ async function Schools() {
                 <span className="block text-muted">{school.staff_count} staff</span>
               </Td>
               <Td className="text-sm">
-                {school.type === "tertiary" ? (
+                {school.type === "tertiary" || school.is_workspace ? (
                   <span className="text-muted">Not used</span>
                 ) : (
                   <>
@@ -112,11 +118,15 @@ async function Schools() {
               </Td>
               <Td className="text-sm">{formatDate(school.created_at)}</Td>
               <Td>
-                <Badge tone={tone[school.status]}>{school.status}</Badge>
+                {school.is_workspace && school.status === "unverified" ? (
+                  <span className="text-sm text-muted">Active</span>
+                ) : (
+                  <Badge tone={tone[school.status]}>{school.status}</Badge>
+                )}
               </Td>
               <Td>
                 <div className="flex justify-end gap-2">
-                  {school.status !== "verified" ? (
+                  {school.status !== "verified" && !school.is_workspace ? (
                     <InlineAction
                       action={setStatus}
                       hidden={{ schoolId: school.id, status: "verified" }}

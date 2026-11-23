@@ -3,15 +3,18 @@ import Link from "next/link";
 import { ActionForm, FormMessage, SubmitButton, TextField } from "@/components/form";
 import { SchoolFields } from "@/components/school-fields";
 import { registerSchool } from "./actions";
+import { SignUpChoice } from "./sign-up-choice";
 
 export const metadata: Metadata = { title: "Register your school" };
 
 export default function SignUpPage() {
   return (
     <div className="rounded-lg border border-line bg-surface p-6 shadow-sm">
+      <SignUpChoice current="school" />
       <h1 className="text-xl font-semibold">Register your school</h1>
       <p className="mt-1 text-sm text-muted">
-        Start right away. RollCol checks every new school, and some limits apply until yours is verified.
+        Start right away. RollCol checks every new school, and some limits apply until yours is verified. Teaching on your
+        own? Choose <strong className="font-medium text-foreground">Just me</strong> above.
       </p>
 
       <ActionForm action={registerSchool} className="mt-6 space-y-4">

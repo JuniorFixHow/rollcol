@@ -10,6 +10,8 @@ export interface MemberSchool {
   type: Enums["school_type"];
   registerMode: Enums["register_mode"] | null;
   status: Enums["school_status"];
+  /** A teacher's or lecturer's own workspace (one person, no school). */
+  isWorkspace: boolean;
 }
 
 export type StaffMembership = {
@@ -54,6 +56,7 @@ export function toMemberships(rows: readonly MembershipRow[] | null | undefined,
       type: row.school_type,
       registerMode: row.register_mode ?? null,
       status: row.school_status,
+      isWorkspace: row.is_workspace === true,
     };
     if (row.kind === "staff") {
       memberships.push({

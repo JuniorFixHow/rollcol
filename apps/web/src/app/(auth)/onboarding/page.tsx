@@ -1,4 +1,4 @@
-import { pendingSchoolSchema, pendingStudentJoinSchema, schoolDetailsSchema } from "@rollcol/shared";
+import { pendingSchoolSchema, pendingStudentJoinSchema, pendingWorkspaceSchema, schoolDetailsSchema } from "@rollcol/shared";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -10,6 +10,7 @@ import { PageSkeleton } from "@/components/ui";
 import { getSession, requireUser } from "@/lib/auth";
 import { type FormState, failed, formValues, invalid } from "@/lib/forms";
 import { rememberSchool } from "@/lib/school-actions";
+import { SignUpChoice } from "../sign-up/sign-up-choice";
 
 export const metadata: Metadata = { title: "Set up your school" };
 
@@ -63,6 +64,8 @@ async function Onboarding() {
 
   // A student confirmed their email on the web; joining finishes in the app.
   if (pendingStudentJoinSchema.safeParse(metadata).success) redirect("/students-use-the-app");
+  // Signed up for a workspace and confirmed the email.
+  if (pendingWorkspaceSchema.safeParse(metadata).success) redirect("/onboarding/workspace");
 
   const pending = pendingSchoolSchema.safeParse(metadata);
   const defaults = pending.success
@@ -83,10 +86,11 @@ async function Onboarding() {
     ? "Your email is confirmed. Check these details, then create your school."
     : another
       ? "You will be this school's first admin. Your other schools are not affected, and you can switch between them from the dashboard."
-      : "Your account is not part of a school yet. Register your school below. If your school already uses RollCol, ask its admin to invite you instead.";
+      : "Your account is not part of a school yet. Register your school below. If your school already uses RollCol, ask its admin to invite you instead. Teaching on your own? Choose Just me.";
 
   return (
     <div className="rounded-lg border border-line bg-surface p-6 shadow-sm">
+      {defaults ? null : <SignUpChoice current="school" base="/onboarding" />}
       <h1 className="text-xl font-semibold">{title}</h1>
       <p className="mt-1 text-sm text-muted">{intro}</p>
       <ActionForm action={createSchool} className="mt-6 space-y-4">

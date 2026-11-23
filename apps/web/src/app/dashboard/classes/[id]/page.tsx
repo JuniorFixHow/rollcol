@@ -214,13 +214,15 @@ export default async function ClassPage({ params }: PageProps<"/dashboard/classe
               className={`grid items-start gap-4 ${perPeriod ? "sm:grid-cols-[1fr_1fr_9rem_auto]" : "sm:grid-cols-[1fr_1fr_auto]"}`}
             >
               <TextField name="name" label="Class name" defaultValue={cls.name} />
-              <SelectField
-                name="classTeacherId"
-                label="Class teacher"
-                placeholder="Not set"
-                defaultValue={cls.class_teacher_id ?? ""}
-                options={teacherOptions}
-              />
+              {school.isWorkspace ? null : (
+                <SelectField
+                  name="classTeacherId"
+                  label="Class teacher"
+                  placeholder="Not set"
+                  defaultValue={cls.class_teacher_id ?? ""}
+                  options={teacherOptions}
+                />
+              )}
               {perPeriod ? (
                 <TextField
                   name="periodsPerDay"

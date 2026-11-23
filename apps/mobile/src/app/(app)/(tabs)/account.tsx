@@ -73,7 +73,7 @@ export default function AccountScreen() {
         <Body muted>{session?.user.email}</Body>
         {member && member.kind !== "none" ? (
           <Body muted>
-            {member.school.name} · School code {member.school.code} · School ID {member.schoolNumber}
+            {member.school.name} · {member.school.isWorkspace ? "Workspace" : "School"} code {member.school.code} · School ID {member.schoolNumber}
           </Body>
         ) : null}
         {member && member.kind !== "none" ? (

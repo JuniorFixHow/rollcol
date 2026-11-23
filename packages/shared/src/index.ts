@@ -13,3 +13,4 @@ export * from "./sms/gsm";
 export type { Database, Enums, Json, Tables, TablesInsert, TablesUpdate } from "./database.types";
 export { Constants as DatabaseConstants } from "./database.types";
 export type { ZodError } from "zod";
+export * from "./report-view";

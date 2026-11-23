@@ -4,6 +4,7 @@ import Link from "next/link";
 import { refresh } from "next/cache";
 import { ActionForm, CheckboxField, DependsOn, FormMessage, RadioGroupField, SubmitButton, TextField } from "@/components/form";
 import { Card, PageHeader } from "@/components/ui";
+import { DeleteWorkspace } from "./delete-workspace";
 import { requireAdmin } from "@/lib/auth";
 import { type FormState, failed, formBoolean, formValues, invalid, succeeded } from "@/lib/forms";
 
@@ -24,6 +25,7 @@ async function saveSettings(_: FormState, formData: FormData): Promise<FormState
   if (!parsed.success) return invalid(parsed.error, values);
   const input = parsed.data;
   const tertiary = member.school.type === "tertiary";
+  const workspace = member.school.isWorkspace;
 
   const timing = tertiary
     ? null
@@ -34,7 +36,7 @@ async function saveSettings(_: FormState, formData: FormData): Promise<FormState
       });
   if (timing && !timing.success) return invalid(timing.error, values);
 
-  const sms = tertiary
+  const sms = tertiary || workspace
     ? null
     : smsSettingsSchema.safeParse({
         smsName: values.smsName ?? "",
@@ -46,7 +48,7 @@ async function saveSettings(_: FormState, formData: FormData): Promise<FormState
       });
   if (sms && !sms.success) return invalid(sms.error, values);
 
-  const rules = tertiary
+  const rules = tertiary && !workspace
     ? sessionRulesSchema.parse({
         lecturersAddVenues: formBoolean(formData, "lecturersAddVenues"),
         lecturersRemoveSelfCheckins: formBoolean(formData, "lecturersRemoveSelfCheckins"),
@@ -108,6 +110,7 @@ export default async function SettingsPage() {
   const { supabase, member } = await requireAdmin();
   const { school } = member;
   const tertiary = school.type === "tertiary";
+  const workspace = school.isWorkspace;
 
   const [{ data: details }, { data: settings }] = await Promise.all([
     supabase.from("schools").select("name, contact_phone, register_mode").eq("id", school.id).single(),
@@ -124,12 +127,12 @@ export default async function SettingsPage() {
     <>
       <PageHeader title="Settings" />
       <ActionForm action={saveSettings} className="space-y-6">
-        <Card title="School">
+        <Card title={workspace ? "Workspace" : "School"}>
           <div className="grid gap-4 sm:grid-cols-2">
-            <TextField name="name" label="School name" defaultValue={details?.name} />
+            <TextField name="name" label={workspace ? "Workspace name" : "School name"} defaultValue={details?.name} />
             <TextField
               name="contactPhone"
-              label="School phone number"
+              label={workspace ? "Your phone number" : "School phone number"}
               type="tel"
               inputMode="tel"
               defaultValue={details ? formatPhoneForDisplay(details.contact_phone) : undefined}
@@ -137,7 +140,7 @@ export default async function SettingsPage() {
           </div>
         </Card>
 
-        {tertiary ? (
+        {tertiary && !workspace ? (
           <Card
             title="Lecturers"
             description="What lecturers may do. Admins can always correct a session, and every change is kept with its reason, who made it and when."
@@ -176,14 +179,14 @@ export default async function SettingsPage() {
             <div className="space-y-4">
               <CheckboxField
                 name="studentSelfSignup"
-                label="Students can create accounts with the school code"
+                label={workspace ? "Students can join with the workspace code" : "Students can create accounts with the school code"}
                 description="Turn this off to stop new sign-ups, for example after registration closes."
                 defaultChecked={settings?.student_self_signup ?? true}
               />
               <CheckboxField
                 name="studentApprovalRequired"
-                label="An admin approves each new student"
-                description="New students wait on the Students page until an admin approves them. They cannot check in until then."
+                label={workspace ? "You approve each new student" : "An admin approves each new student"}
+                description={`New students wait on the Students page until ${workspace ? "you approve" : "an admin approves"} them. They cannot check in until then.`}
                 defaultChecked={settings?.student_approval_required ?? true}
               />
             </div>
@@ -234,7 +237,7 @@ export default async function SettingsPage() {
           </Card>
         )}
 
-        {tertiary ? null : (
+        {tertiary || workspace ? null : (
           <Card
             title="SMS to guardians"
             description={
@@ -315,6 +318,8 @@ export default async function SettingsPage() {
           <SubmitButton>Save settings</SubmitButton>
         </div>
       </ActionForm>
+
+      {workspace ? <DeleteWorkspace name={school.name} /> : null}
     </>
   );
 }

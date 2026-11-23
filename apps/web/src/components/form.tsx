@@ -302,7 +302,7 @@ export function RadioGroupField({
               name={name}
               value={option.value}
               defaultChecked={value === option.value}
-              className="mt-0.5 accent-accent"
+              className="mt-0.5 size-4 shrink-0 accent-accent"
             />
             <span>
               <span className="block font-medium">{option.label}</span>

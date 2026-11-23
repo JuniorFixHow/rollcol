@@ -100,6 +100,7 @@ describe("memberships", () => {
     school_type: "non_tertiary" as const,
     register_mode: "daily" as const,
     school_status: "verified" as const,
+    is_workspace: false,
   });
   const rows = [
     { kind: "student", member_id: "m1", status: "active" as const, role: "teacher" as const, full_name: "Ama", school_number: "ST1", ...school("s1", "Alpha") },

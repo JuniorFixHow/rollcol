@@ -49,7 +49,7 @@ export function JoinSchoolForm({ defaultName = "", onJoined }: { defaultName?: s
 
   return (
     <>
-      <Field label="School code" value={schoolCode} onChangeText={setSchoolCode} autoCapitalize="characters" autoCorrect={false} />
+      <Field label="School or workspace code" value={schoolCode} onChangeText={setSchoolCode} autoCapitalize="characters" autoCorrect={false} />
       <Field label="School ID" value={schoolId} onChangeText={setSchoolId} autoCapitalize="characters" autoCorrect={false} />
       <Field label="Full name" value={fullName} onChangeText={setFullName} textContentType="name" />
       {error ? <Message>{error}</Message> : null}

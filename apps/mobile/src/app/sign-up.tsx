@@ -133,7 +133,7 @@ export default function SignUpScreen() {
       </View>
 
       <Field
-        label="School code"
+        label="School or workspace code"
         hint="Ask your school or lecturer for it."
         value={values.schoolCode}
         onChangeText={set("schoolCode")}

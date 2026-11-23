@@ -45,7 +45,7 @@ function isKind(value: unknown): value is Kind {
 export default async function MessagesPage({ searchParams }: PageProps<"/dashboard/messages">) {
   const { supabase, member } = await requireStaff();
   const { school } = member;
-  if (school.type === "tertiary") notFound();
+  if (school.type === "tertiary" || school.isWorkspace) notFound();
   const isAdmin = member.role === "admin";
   const verified = school.status === "verified";
   const kindParam = (await searchParams).kind;

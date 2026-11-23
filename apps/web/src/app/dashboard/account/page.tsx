@@ -121,11 +121,11 @@ export default async function AccountPage() {
           <ThemePicker />
         </Card>
 
-        <Card title="Your schools" description="One RollCol account can belong to several schools.">
+        <Card title="Your schools and workspaces" description="One RollCol account can belong to several schools, and have its own workspaces.">
           <ul className="divide-y divide-line text-sm">
             {memberships.map((m) => {
               const current = m.school.id === member.school.id && m.kind === "staff";
-              const role = m.kind === "staff" ? staffRoleLabel(m.role, m.school.type) : "Student";
+              const role = m.kind === "staff" ? (m.school.isWorkspace ? "Your workspace" : staffRoleLabel(m.role, m.school.type)) : "Student";
               return (
                 <li key={`${m.kind}-${m.id}`} className="flex flex-wrap items-center justify-between gap-3 py-3">
                   <div className="min-w-0">
@@ -151,11 +151,17 @@ export default async function AccountPage() {
               );
             })}
           </ul>
-          <div className="mt-4">
+          <div className="mt-4 flex flex-wrap gap-3">
             <LinkButton href="/onboarding" variant="secondary" size="sm">
               Register another school
             </LinkButton>
+            <LinkButton href="/onboarding/workspace" variant="secondary" size="sm">
+              Start a workspace
+            </LinkButton>
           </div>
+          <p className="mt-2 text-xs text-muted">
+            A workspace is for you alone, without a school: your own classes or courses, for example extra classes.
+          </p>
         </Card>
 
         <Card title="Delete your account" description="This removes your RollCol account from every school and signs you out. It cannot be undone.">

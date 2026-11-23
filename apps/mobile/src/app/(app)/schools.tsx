@@ -26,7 +26,7 @@ export default function SchoolsScreen() {
         {memberships.map((m) => {
           const key = `${m.kind}-${m.id}`;
           const current = key === currentKey;
-          const role = m.kind === "staff" ? staffRoleLabel(m.role, m.school.type) : "Student";
+          const role = m.kind === "staff" ? (m.school.isWorkspace ? "Your workspace" : staffRoleLabel(m.role, m.school.type)) : m.school.isWorkspace ? "Student in a workspace" : "Student";
           const state = m.status === "pending" ? " · Waiting for approval" : m.status === "disabled" ? " · Turned off" : "";
           return (
             <Pressable
@@ -56,13 +56,13 @@ export default function SchoolsScreen() {
 
       {joining ? (
         <Card>
-          <Text style={[styles.name, { color: palette.text }]}>Join another school</Text>
+          <Text style={[styles.name, { color: palette.text }]}>Join another school or workspace</Text>
           <Body muted>For students at universities, colleges and polytechnics that use RollCol.</Body>
           <JoinSchoolForm defaultName={firstName} onJoined={() => router.back()} />
         </Card>
       ) : (
         <View style={styles.list}>
-          <Button label="Join another school as a student" variant="secondary" onPress={() => setJoining(true)} />
+          <Button label="Join a school or workspace as a student" variant="secondary" onPress={() => setJoining(true)} />
           <Body muted>Staff are added by their school admin. Ask them to invite the email you use for RollCol.</Body>
         </View>
       )}

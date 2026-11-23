@@ -2,6 +2,7 @@ import { staffRoleLabel } from "@rollcol/shared";
 import type { Metadata } from "next";
 import { ActionForm, FieldButton, FormMessage, InlineAction, SelectField, SubmitButton, TextField } from "@/components/form";
 import { Badge, Card, EmptyState, PageHeader, Table, Td, formatDateTime } from "@/components/ui";
+import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { grantDelegation, inviteStaff, removeStaff, revokeDelegation, updateStaff } from "./actions";
 
@@ -22,6 +23,8 @@ function delegationTimes(): { min: string; suggested: string } {
 
 export default async function StaffPage() {
   const { supabase, member } = await requireAdmin();
+  // A workspace is one person.
+  if (member.school.isWorkspace) redirect("/dashboard");
   const { school } = member;
   const tertiary = school.type === "tertiary";
   const teacherWord = tertiary ? "lecturer" : "teacher";

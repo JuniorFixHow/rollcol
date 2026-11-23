@@ -22,6 +22,13 @@ export default function Home() {
             Sign in
           </LinkButton>
         </div>
+        <p className="text-sm text-muted">
+          Teaching on your own, without a school?{" "}
+          <a href="/sign-up/workspace" className="font-medium text-accent hover:underline">
+            Start a free workspace
+          </a>
+          .
+        </p>
       </main>
       <footer className="mx-auto w-full max-w-5xl px-6 py-6 text-sm text-muted">
         <a href="/privacy" className="hover:text-foreground">

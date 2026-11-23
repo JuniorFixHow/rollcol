@@ -37,20 +37,26 @@ async function Sidebar() {
   const staffSchools = staffMemberships(memberships).map((m) => ({ id: m.school.id, name: m.school.name }));
   const isAdmin = role === "admin";
   const tertiary = school.type === "tertiary";
+  // A workspace is one person: no staff, no SMS (free), no programmes or batches.
+  const workspace = school.isWorkspace;
 
   const attendance = [
     tertiary ? { href: "/dashboard/sessions", label: "Sessions" } : { href: "/dashboard/registers", label: "Registers" },
-    ...(tertiary ? [{ href: "/dashboard/venues", label: "Venues" }] : [{ href: "/dashboard/messages", label: "Messages" }]),
+    ...(tertiary
+      ? [{ href: "/dashboard/venues", label: "Venues" }]
+      : workspace
+        ? []
+        : [{ href: "/dashboard/messages", label: "Messages" }]),
     { href: "/dashboard/reports", label: "Reports" },
     ...(tertiary && isAdmin ? [{ href: "/dashboard/phones", label: "Phones" }] : []),
   ];
   const people = [
     { href: "/dashboard/students", label: "Students" },
-    ...(isAdmin ? [{ href: "/dashboard/staff", label: "Staff" }] : []),
+    ...(isAdmin && !workspace ? [{ href: "/dashboard/staff", label: "Staff" }] : []),
   ];
   const academics = [
     tertiary ? { href: "/dashboard/courses", label: "Courses" } : { href: "/dashboard/classes", label: "Classes" },
-    ...(tertiary && isAdmin
+    ...(tertiary && isAdmin && !workspace
       ? [
           { href: "/dashboard/programmes", label: "Programmes" },
           { href: "/dashboard/batches", label: "Batches" },
@@ -82,7 +88,7 @@ async function Sidebar() {
             <p className="truncate text-sm font-medium">{school.name}</p>
           )}
           <p className="mt-1 truncate text-xs text-muted">
-            {member.fullName}, {staffRoleLabel(role, school.type)}
+            {workspace ? `${member.fullName}, your workspace` : `${member.fullName}, ${staffRoleLabel(role, school.type)}`}
           </p>
         </div>
       }

@@ -60,6 +60,9 @@ export const TIMEZONE = "Africa/Accra";
  * Limits until the platform owner verifies a school. The database enforces these
  * (private.unverified_limit in supabase/migrations); keep the two in sync.
  */
+/** Free students across all of one person's workspaces (private.workspace_student_limit). */
+export const WORKSPACE_FREE_STUDENTS = 50;
+
 export const UNVERIFIED_SCHOOL_LIMITS = {
   students: 10,
   staff: 10,

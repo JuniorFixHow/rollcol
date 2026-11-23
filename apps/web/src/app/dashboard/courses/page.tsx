@@ -114,7 +114,7 @@ export default async function CoursesPage({ searchParams }: PageProps<"/dashboar
                         {run.course_run_staff.map((row) => (
                           <li key={row.staff_id} className="flex items-center gap-2">
                             {row.staff?.full_name}
-                            {isAdmin ? (
+                            {isAdmin && !school.isWorkspace ? (
                               <InlineAction
                                 action={removeLecturer}
                                 hidden={{ courseRunId: run.id, staffId: row.staff_id }}
@@ -126,7 +126,7 @@ export default async function CoursesPage({ searchParams }: PageProps<"/dashboar
                           </li>
                         ))}
                       </ul>
-                      {isAdmin ? (
+                      {isAdmin && !school.isWorkspace ? (
                         <ActionForm action={addLecturer.bind(null, run.id)} className="mt-2 flex items-center gap-2">
                           <label className="sr-only" htmlFor={`lecturer-${run.id}`}>
                             Add lecturer

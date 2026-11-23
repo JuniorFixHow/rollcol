@@ -1,4 +1,4 @@
-import { UNVERIFIED_SCHOOL_LIMITS, periodWord, staffRoleLabel } from "@rollcol/shared";
+import { UNVERIFIED_SCHOOL_LIMITS, WORKSPACE_FREE_STUDENTS, periodWord, staffRoleLabel } from "@rollcol/shared";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Card, Notice, PageHeader } from "@/components/ui";
@@ -11,6 +11,7 @@ export default async function OverviewPage() {
   const { school } = member;
   const isAdmin = member.role === "admin";
   const tertiary = school.type === "tertiary";
+  const workspace = school.isWorkspace;
 
   const count = (table: "staff" | "classes" | "courses" | "academic_periods" | "guardians") =>
     supabase.from(table).select("id", { count: "exact", head: true }).eq("school_id", school.id);
@@ -28,7 +29,7 @@ export default async function OverviewPage() {
 
   const stats = [
     { label: "Students", value: students.count ?? 0, href: "/dashboard/students" },
-    { label: "Staff", value: staff.count ?? 0, href: isAdmin ? "/dashboard/staff" : undefined },
+    ...(workspace ? [] : [{ label: "Staff", value: staff.count ?? 0, href: isAdmin ? "/dashboard/staff" : undefined }]),
     {
       label: tertiary ? "Courses" : "Classes",
       value: groups.count ?? 0,
@@ -36,7 +37,17 @@ export default async function OverviewPage() {
     },
   ];
 
-  const steps = [
+  const workspaceSteps = [
+    { done: (periods.count ?? 0) > 0, label: `Add the current ${periodWord(school.type)}`, href: "/dashboard/calendar" },
+    tertiary
+      ? { done: (groups.count ?? 0) > 0, label: "Add your courses", href: "/dashboard/courses" }
+      : { done: (groups.count ?? 0) > 0, label: "Create your classes", href: "/dashboard/classes" },
+    tertiary
+      ? { done: (students.count ?? 0) > 0, label: "Give your students the workspace code so they can join in the app", href: "/dashboard/students" }
+      : { done: (students.count ?? 0) > 0, label: "Add your pupils to their classes", href: "/dashboard/students" },
+  ];
+
+  const steps = workspace ? workspaceSteps : [
     { done: (periods.count ?? 0) > 0, label: `Add the current ${periodWord(school.type)}`, href: "/dashboard/calendar" },
     tertiary
       ? { done: (groups.count ?? 0) > 0, label: "Add courses and assign lecturers", href: "/dashboard/courses" }
@@ -52,10 +63,24 @@ export default async function OverviewPage() {
 
   return (
     <>
-      <PageHeader title={school.name} description={`Signed in as ${member.fullName}, ${staffRoleLabel(member.role, school.type)}.`} />
+      <PageHeader
+        title={school.name}
+        description={
+          workspace
+            ? `Your own workspace, ${member.fullName}. Only you can see and change it.`
+            : `Signed in as ${member.fullName}, ${staffRoleLabel(member.role, school.type)}.`
+        }
+      />
 
       <div className="space-y-6">
-        {school.status === "unverified" ? (
+        {workspace ? (
+          <Notice title="A free workspace">
+            You can have up to {WORKSPACE_FREE_STUDENTS} students in all your workspaces.
+            {tertiary
+              ? " Students check in with the RollCol app, as at a school."
+              : " Guardians can be recorded, but free workspaces do not send SMS alerts."}
+          </Notice>
+        ) : school.status === "unverified" ? (
           <Notice tone="warning" title="RollCol is verifying your school">
             Until your school is verified you can add up to {UNVERIFIED_SCHOOL_LIMITS.students} students and{" "}
             {UNVERIFIED_SCHOOL_LIMITS.staff} staff
@@ -97,11 +122,15 @@ export default async function OverviewPage() {
         </div>
 
         <Card
-          title="School code"
+          title={workspace ? "Workspace code" : "School code"}
           description={
-            tertiary
-              ? "Staff use it to sign in. Students enter it in the RollCol app to create their accounts."
-              : "Staff use it with their school ID to sign in."
+            workspace
+              ? tertiary
+                ? "Students enter it in the RollCol app, with their student ID, to join your courses."
+                : "You can also sign in with this code and the school ID OWNER."
+              : tertiary
+                ? "Staff use it to sign in. Students enter it in the RollCol app to create their accounts."
+                : "Staff use it with their school ID to sign in."
           }
         >
           <p className="font-mono text-3xl font-semibold tracking-[0.3em]">{school.code}</p>
