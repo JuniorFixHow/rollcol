@@ -8,6 +8,7 @@ import { Empty, PullHint, usePullHint } from "@/components/kit";
 import { usePalette } from "@/components/theme";
 import { Body, Message } from "@/components/ui";
 import { formatDayTime } from "@/lib/format";
+import { useSession } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
 import { refreshUnreadBadge } from "@/lib/unread";
 
@@ -34,6 +35,7 @@ export default function NotificationsScreen() {
   const [failed, setFailed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
+  const { member } = useSession();
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
@@ -100,7 +102,9 @@ export default function NotificationsScreen() {
         ListEmptyComponent={
           loaded ? (
             <Empty icon="notifications-outline">
-              No notifications. You are told here when a class opens, is about to close, and whether you were marked present.
+              {member?.kind === "student"
+                ? "No notifications. You are told here when a class opens, is about to close, and whether you were marked present."
+                : "No notifications. You are told here, for example, when someone asks to move a workspace into your school."}
             </Empty>
           ) : undefined
         }

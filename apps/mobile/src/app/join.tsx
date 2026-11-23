@@ -1,6 +1,7 @@
 import { StyleSheet, View } from "react-native";
 import { JoinSchoolForm } from "@/components/join-school-form";
 import { Body, Button, Screen, Title, Logo } from "@/components/ui";
+import { forgetThisPhonesPush } from "@/lib/push";
 import { supabase } from "@/lib/supabase";
 
 /** Signed in, but not part of a school yet. */
@@ -16,7 +17,7 @@ export default function JoinScreen() {
         </Body>
       </View>
       <JoinSchoolForm />
-      <Button label="Sign out" variant="link" onPress={() => void supabase.auth.signOut()} />
+      <Button label="Sign out" variant="link" onPress={() => void forgetThisPhonesPush().then(() => supabase.auth.signOut())} />
     </Screen>
   );
 }

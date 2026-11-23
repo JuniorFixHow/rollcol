@@ -7,6 +7,7 @@ import { ConfirmDialog } from "@/components/dialog";
 import { Row, SectionTitle } from "@/components/kit";
 import { formatDayTime } from "@/lib/format";
 import { usePhone } from "@/lib/phone";
+import { forgetThisPhonesPush } from "@/lib/push";
 import { usePalette } from "@/components/theme";
 import { type ThemeChoice, getTheme, setTheme } from "@/lib/appearance";
 import { Body, Button, Card, Message } from "@/components/ui";
@@ -89,6 +90,11 @@ export default function AccountScreen() {
           onPress={() => router.push("/schools")}
         />
       ) : null}
+      <Row
+        title="Notifications"
+        subtitle="Choose which notifications you get on this phone"
+        onPress={() => router.push("/notification-settings")}
+      />
 
       {phone ? (
         <View style={styles.group}>
@@ -134,7 +140,15 @@ export default function AccountScreen() {
         <Button label="Change password" variant="secondary" onPress={() => void WebBrowser.openBrowserAsync(`${WEB_URL}/forgot-password`)} />
         <Button label="Privacy policy" variant="secondary" onPress={() => void WebBrowser.openBrowserAsync(`${WEB_URL}/privacy`)} />
         <Button label="Terms of Use" variant="secondary" onPress={() => void WebBrowser.openBrowserAsync(APPLE_STANDARD_EULA_URL)} />
-        <Button label="Sign out" variant="secondary" onPress={() => void forgetActiveSchool().then(() => supabase.auth.signOut())} />
+        <Button
+          label="Sign out"
+          variant="secondary"
+          onPress={() =>
+            void forgetThisPhonesPush()
+              .then(() => forgetActiveSchool())
+              .then(() => supabase.auth.signOut())
+          }
+        />
       </View>
 
       <View style={styles.group}>

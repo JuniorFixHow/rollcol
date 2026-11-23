@@ -60,10 +60,43 @@ export async function AttendanceRecord({
     );
   }
 
+  // Other classes whose registers mark this pupil (for example a class moved in from a workspace).
+  const { data: classes } = await supabase.rpc("student_register_classes", { p_student_id: student.id });
+  const otherClasses = (classes ?? []).filter((c) => !c.is_own);
+  const others = (
+    await Promise.all(
+      otherClasses.map(async (c) => {
+        const { data: rows } = await supabase.rpc("class_register_days", { p_class_id: c.class_id, p_period_id: period?.id ?? null });
+        const line = buildClassReport((rows ?? []).filter((row) => row.student_id === student.id)).students[0];
+        return line && line.held > 0 ? { id: c.class_id, name: c.class_name, line } : null;
+      }),
+    )
+  ).filter((other) => other !== null);
+  const otherList =
+    others.length > 0 ? (
+      <div className="mt-5">
+        <p className="text-sm font-medium">Also marked in</p>
+        <ul className="mt-2 divide-y divide-line rounded-md border border-line text-sm">
+          {others.map((other) => (
+            <li key={other.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-2">
+              <Link href={`/dashboard/reports/class/${other.id}?view=all${period ? `&period=${period.id}` : ""}`} className="text-accent hover:underline">
+                {other.name}
+              </Link>
+              <span>
+                Attendance {other.line.attended} out of {other.line.held}
+                {other.line.rate === null ? "" : ` (${other.line.rate}%)`}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ) : null;
+
   if (!student.class_id) {
     return (
       <Card title={title}>
         <EmptyState>Put {student.first_name} in a class to see their attendance.</EmptyState>
+        {otherList}
       </Card>
     );
   }
@@ -76,6 +109,7 @@ export async function AttendanceRecord({
     return (
       <Card title={title}>
         <EmptyState>No registers have been taken for {student.first_name}&apos;s class this term yet.</EmptyState>
+        {otherList}
       </Card>
     );
   }
@@ -88,7 +122,7 @@ export async function AttendanceRecord({
       title={title}
       description={
         <>
-          For the report card. Present and late both count.{" "}
+          For the report card ({student.first_name}&apos;s own class). Present and late both count.{" "}
           <Link href={`/dashboard/reports/class/${student.class_id}${period ? `?period=${period.id}` : ""}`} className="text-accent hover:underline">
             See the class register
           </Link>
@@ -124,6 +158,7 @@ export async function AttendanceRecord({
           ))}
         </ul>
       ) : null}
+      {otherList}
     </Card>
   );
 }

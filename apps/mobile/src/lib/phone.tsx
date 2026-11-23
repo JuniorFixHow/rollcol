@@ -1,7 +1,7 @@
 import { describeDatabaseError } from "@rollcol/shared";
 import { createContext, type ReactNode, use, useCallback, useEffect, useState } from "react";
 import { type PhoneStatus, loadPhoneStatus, registerThisPhone } from "./device";
-import { registerForPush, useNotificationTaps } from "./push";
+import { registerForPush, registerStaffPush, useNotificationTaps } from "./push";
 
 function describePhoneError(caught: unknown): string {
   const offline = "RollCol could not check this phone. Check your connection and pull down to try again.";
@@ -23,12 +23,18 @@ const PhoneContext = createContext<PhoneState>({ phone: null, error: null, refre
 
 /**
  * For students: registers this phone (binding) and its push token after
- * sign-in. Staff do not register phones.
+ * sign-in. Staff do not register phones, only a push token.
  */
 export function PhoneProvider({ isStudent, children }: { isStudent: boolean; children: ReactNode }) {
   const [phone, setPhone] = useState<PhoneStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
-  useNotificationTaps(isStudent);
+  useNotificationTaps(true);
+
+  // Staff: only the push token, no phone binding.
+  useEffect(() => {
+    if (isStudent) return;
+    void registerStaffPush().catch(() => undefined);
+  }, [isStudent]);
 
   useEffect(() => {
     if (!isStudent) return;

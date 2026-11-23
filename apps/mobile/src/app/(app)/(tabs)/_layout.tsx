@@ -61,7 +61,7 @@ export default function TabsLayout() {
   const { member } = useSession();
   const isStudent = member?.kind === "student";
   const isLecturer = member?.kind === "staff" && member.school.type === "tertiary";
-  const unread = useUnreadCount(isStudent);
+  const unread = useUnreadCount(member !== null && member.kind !== "none");
 
   return (
     <Tabs
@@ -116,7 +116,7 @@ export default function TabsLayout() {
         name="notifications"
         options={{
           title: "Notifications",
-          href: isStudent ? "/notifications" : null,
+          href: "/notifications",
           tabBarBadge: unread > 0 ? (unread > 99 ? "99+" : unread) : undefined,
           tabBarBadgeStyle: { backgroundColor: palette.danger, color: "#ffffff" },
           tabBarIcon: ({ color, focused }) => (

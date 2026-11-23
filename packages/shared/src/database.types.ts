@@ -15,6 +15,12 @@ export type Database = {
   }
   public: {
     Tables: {
+      notification_settings: {
+        Row: { user_id: string; kind: string; enabled: boolean; updated_at: string }
+        Insert: { user_id: string; kind: string; enabled: boolean; updated_at?: string }
+        Update: { user_id?: string; kind?: string; enabled?: boolean; updated_at?: string }
+        Relationships: []
+      }
       workspace_moves: {
         Row: {
           id: string
@@ -1657,6 +1663,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      forget_push_token: {
+        Args: { p_token: string }
+        Returns: undefined
+      }
+      set_notification_setting: {
+        Args: { p_kind: string; p_enabled: boolean }
+        Returns: undefined
+      }
+      set_staff_push_token: {
+        Args: { p_token: string }
+        Returns: undefined
+      }
+      student_register_classes: {
+        Args: { p_student_id: string }
+        Returns: { class_id: string; class_name: string; is_own: boolean }[]
+      }
       approve_workspace_move: {
         Args: { p_move_id: string }
         Returns: undefined
