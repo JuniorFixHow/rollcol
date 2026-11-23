@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { ActionForm, FormMessage, InlineAction, SubmitButton, TextField } from "@/components/form";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ThemePicker } from "@/components/theme";
-import { Card, LinkButton, Notice, PageHeader } from "@/components/ui";
+import { Card, LinkButton, Notice, PageHeader, formatDate } from "@/components/ui";
 import { requireStaff, requireUser } from "@/lib/auth";
 import { type FormState, failed } from "@/lib/forms";
 import { switchSchool } from "@/lib/school-actions";
@@ -45,12 +45,20 @@ async function deleteAccount(): Promise<FormState> {
 }
 
 export default async function AccountPage() {
-  const { supabase, member, memberships } = await requireStaff();
-  const [{ data: effectRows }, { data: user }] = await Promise.all([
+  const { supabase, member, memberships, userId } = await requireStaff();
+  const [{ data: effectRows }, { data: user }, , { data: moves }] = await Promise.all([
     supabase.rpc("account_deletion_effects"),
     supabase.auth.getUser(),
     // Keeps staff records on the address the person signs in with.
     supabase.rpc("sync_my_email"),
+    // Workspaces this person asked to move (the workspace itself is gone once moved).
+    supabase
+      .from("workspace_moves")
+      .select("id, workspace_name, status, reason, created_at, decided_at, school:schools!workspace_moves_school_id_fkey(name)")
+      .eq("requested_by", userId)
+      .in("status", ["approved", "declined"])
+      .order("created_at", { ascending: false })
+      .limit(5),
   ]);
   const effects: DeletionEffect[] = effectRows ?? [];
   const blocked = effects.filter((e) => e.effect === "last_admin");
@@ -120,6 +128,28 @@ export default async function AccountPage() {
         <Card title="Appearance" description="Follow your device, or always use light or dark. Remembered in this browser.">
           <ThemePicker />
         </Card>
+
+        {moves && moves.length > 0 ? (
+          <Card title="Workspace moves">
+            <ul className="divide-y divide-line text-sm">
+              {moves.map((move) => (
+                <li key={move.id} className="py-2">
+                  {move.status === "approved" ? (
+                    <>
+                      <span className="font-medium">{move.workspace_name}</span> moved into {move.school?.name ?? "a school"} on{" "}
+                      {formatDate(move.decided_at ?? move.created_at)}.
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-medium">{move.school?.name ?? "The school"}</span> declined moving {move.workspace_name}:{" "}
+                      {move.reason}
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </Card>
+        ) : null}
 
         <Card title="Your schools and workspaces" description="One RollCol account can belong to several schools, and have its own workspaces.">
           <ul className="divide-y divide-line text-sm">

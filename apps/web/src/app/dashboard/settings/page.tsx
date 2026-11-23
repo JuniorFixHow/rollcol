@@ -5,6 +5,7 @@ import { refresh } from "next/cache";
 import { ActionForm, CheckboxField, DependsOn, FormMessage, RadioGroupField, SubmitButton, TextField } from "@/components/form";
 import { Card, PageHeader } from "@/components/ui";
 import { DeleteWorkspace } from "./delete-workspace";
+import { MoveWorkspace } from "./move-workspace";
 import { requireAdmin } from "@/lib/auth";
 import { type FormState, failed, formBoolean, formValues, invalid, succeeded } from "@/lib/forms";
 
@@ -319,6 +320,7 @@ export default async function SettingsPage() {
         </div>
       </ActionForm>
 
+      {workspace ? <MoveWorkspace supabase={supabase} member={member} /> : null}
       {workspace ? <DeleteWorkspace name={school.name} /> : null}
     </>
   );

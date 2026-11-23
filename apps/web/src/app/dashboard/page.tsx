@@ -6,7 +6,8 @@ import { requireStaff } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Overview" };
 
-export default async function OverviewPage() {
+export default async function OverviewPage({ searchParams }: PageProps<"/dashboard">) {
+  const params = await searchParams;
   const { supabase, member } = await requireStaff();
   const { school } = member;
   const isAdmin = member.role === "admin";
@@ -18,7 +19,7 @@ export default async function OverviewPage() {
   const studentCount = () =>
     supabase.from("students").select("id", { count: "exact", head: true }).eq("school_id", school.id);
 
-  const [students, staff, groups, periods, guardians, pending, usageResult] = await Promise.all([
+  const [students, staff, groups, periods, guardians, pending, usageResult, movesResult] = await Promise.all([
     studentCount().neq("status", "disabled"),
     count("staff"),
     count(tertiary ? "courses" : "classes"),
@@ -26,7 +27,16 @@ export default async function OverviewPage() {
     tertiary ? Promise.resolve({ count: 0 }) : count("guardians"),
     studentCount().eq("status", "pending"),
     supabase.rpc("school_student_usage", { p_school_id: school.id }),
+    isAdmin && !workspace
+      ? supabase
+          .from("workspace_moves")
+          .select("id, workspace_name, requested_by_name")
+          .eq("school_id", school.id)
+          .eq("status", "pending")
+          .order("created_at")
+      : Promise.resolve({ data: [] }),
   ]);
+  const moves = movesResult.data ?? [];
   const usage = usageResult.data?.[0];
   const planName =
     usage?.plan === "workspace"
@@ -120,6 +130,20 @@ export default async function OverviewPage() {
             You can view records, but you cannot add people. Contact RollCol support.
           </Notice>
         ) : null}
+        {params.moved === "1" ? (
+          <Notice tone="success" title="The workspace has moved into your school">
+            Its classes or courses, students and records are now part of {school.name}.
+          </Notice>
+        ) : null}
+        {params.moved === "declined" ? <Notice title="You declined the move">The owner sees your reason.</Notice> : null}
+        {moves.map((move) => (
+          <Notice key={move.id} title={`${move.requested_by_name} asks to move a workspace into your school`}>
+            {move.workspace_name}.{" "}
+            <Link href={`/dashboard/moves/${move.id}`} className="font-medium text-accent hover:underline">
+              See what will happen and decide
+            </Link>
+          </Notice>
+        ))}
         {isAdmin && (pending.count ?? 0) > 0 ? (
           <Notice title={`${pending.count} ${pending.count === 1 ? "student is" : "students are"} waiting for approval`}>
             <Link href="/dashboard/students?status=pending" className="font-medium text-accent hover:underline">

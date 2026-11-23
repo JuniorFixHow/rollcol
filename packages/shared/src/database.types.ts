@@ -15,6 +15,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      workspace_moves: {
+        Row: {
+          id: string
+          workspace_id: string | null
+          workspace_name: string
+          school_id: string
+          requested_by: string | null
+          requested_by_name: string
+          status: string
+          reason: string | null
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+        }
+        Insert: {
+          id?: string
+          workspace_id?: string | null
+          workspace_name: string
+          school_id: string
+          requested_by?: string | null
+          requested_by_name: string
+          status?: string
+          reason?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+        }
+        Update: {
+          id?: string
+          workspace_id?: string | null
+          workspace_name?: string
+          school_id?: string
+          requested_by?: string | null
+          requested_by_name?: string
+          status?: string
+          reason?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_moves_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       academic_periods: {
         Row: {
           created_at: string
@@ -1607,6 +1657,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_workspace_move: {
+        Args: { p_move_id: string }
+        Returns: undefined
+      }
+      cancel_workspace_move: {
+        Args: { p_move_id: string }
+        Returns: undefined
+      }
+      decline_workspace_move: {
+        Args: { p_move_id: string; p_reason: string }
+        Returns: undefined
+      }
+      request_workspace_move: {
+        Args: { p_workspace_id: string; p_school_code: string }
+        Returns: string
+      }
+      workspace_move_preview: {
+        Args: { p_move_id: string }
+        Returns: { severity: string; message: string }[]
+      }
       school_student_usage: {
         Args: { p_school_id: string }
         Returns: { used: number; student_limit: number | null; plan: string }[]
