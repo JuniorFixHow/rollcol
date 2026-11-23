@@ -39,7 +39,8 @@ export default async function StudentPage({ params }: PageProps<"/dashboard/stud
   const visible = tertiary ? "all" : await visibleClassIds(supabase, member);
   if (visible !== "all" && (!student.class_id || !visible.includes(student.class_id))) notFound();
 
-  const canMessage = !tertiary && school.status === "verified" && student.status === "active";
+  const { data: features } = tertiary ? { data: null } : await supabase.rpc("school_features", { p_school_id: school.id });
+  const canMessage = !tertiary && features?.[0]?.sms === true && student.status === "active";
   const [
     { data: links },
     { data: delegation },

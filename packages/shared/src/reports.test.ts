@@ -44,3 +44,20 @@ describe("small helpers", () => {
     expect(fileSlug("Basic 4: First Term 2026/27")).toBe("basic-4-first-term-2026-27");
   });
 });
+
+describe("money", async () => {
+  const { formatCedis, billingCatalogSchema } = await import("./billing");
+  it("formats cedis", () => {
+    expect(formatCedis(300)).toBe("GHS 3");
+    expect(formatCedis(123450)).toBe("GHS 1,234.50");
+  });
+  it("reads the catalogue", () => {
+    const parsed = billingCatalogSchema.safeParse({
+      currency: "GHS", trialDays: 28, completeCreditsPerStudent: 2,
+      free: { non_tertiary: 100, tertiary: 200, workspace: 50 },
+      prices: { alerts: 300, complete: 600, standard: 300, workspace_alerts: 400, workspace_standard: 300 },
+      packs: [{ credits: 100, price: 2000 }],
+    });
+    expect(parsed.success).toBe(true);
+  });
+});

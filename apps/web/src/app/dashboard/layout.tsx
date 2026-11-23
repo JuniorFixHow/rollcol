@@ -32,19 +32,21 @@ export default function DashboardLayout({ children }: LayoutProps<"/dashboard">)
 }
 
 async function Sidebar() {
-  const { member, memberships } = await requireStaff();
+  const { supabase, member, memberships } = await requireStaff();
   const { school, role } = member;
   const staffSchools = staffMemberships(memberships).map((m) => ({ id: m.school.id, name: m.school.name }));
   const isAdmin = role === "admin";
   const tertiary = school.type === "tertiary";
-  // A workspace is one person: no staff, no SMS (free), no programmes or batches.
+  // A workspace is one person: no staff, no programmes or batches, and SMS only on the Alerts plan.
   const workspace = school.isWorkspace;
+  const workspaceSms =
+    workspace && !tertiary ? (await supabase.rpc("school_features", { p_school_id: school.id })).data?.[0]?.sms === true : false;
 
   const attendance = [
     tertiary ? { href: "/dashboard/sessions", label: "Sessions" } : { href: "/dashboard/registers", label: "Registers" },
     ...(tertiary
       ? [{ href: "/dashboard/venues", label: "Venues" }]
-      : workspace
+      : workspace && !workspaceSms
         ? []
         : [{ href: "/dashboard/messages", label: "Messages" }]),
     { href: "/dashboard/reports", label: "Reports" },
@@ -71,7 +73,12 @@ async function Sidebar() {
     { title: "Academics", items: academics },
     {
       items: [
-        ...(isAdmin ? [{ href: "/dashboard/settings", label: "Settings" }] : []),
+        ...(isAdmin
+          ? [
+              { href: "/dashboard/settings", label: "Settings" },
+              { href: "/dashboard/billing", label: "Billing" },
+            ]
+          : []),
         { href: "/dashboard/account", label: "Your account" },
       ],
     },

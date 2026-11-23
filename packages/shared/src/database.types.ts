@@ -15,6 +15,52 @@ export type Database = {
   }
   public: {
     Tables: {
+      billing_purchases: {
+        Row: {
+          id: string
+          school_id: string
+          kind: string
+          plan: string | null
+          academic_period_id: string | null
+          period_name: string | null
+          students: number | null
+          credits: number | null
+          amount: number
+          currency: string
+          description: string
+          status: string
+          reference: string
+          paystack_id: string | null
+          channel: string | null
+          receipt_number: string | null
+          failure: string | null
+          created_by: string | null
+          created_by_name: string
+          email: string
+          created_at: string
+          paid_at: string | null
+        }
+        Insert: { school_id: string; kind: string; amount: number; description: string; reference: string; created_by_name: string; email: string }
+        Update: { status?: string }
+        Relationships: []
+      }
+      school_plans: {
+        Row: {
+          id: string
+          school_id: string
+          plan: string
+          academic_period_id: string | null
+          period_name: string
+          starts_on: string
+          ends_on: string
+          students_paid: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: { school_id: string; plan: string; period_name: string; starts_on: string; ends_on: string; students_paid: number }
+        Update: { students_paid?: number }
+        Relationships: []
+      }
       notification_settings: {
         Row: { user_id: string; kind: string; enabled: boolean; updated_at: string }
         Insert: { user_id: string; kind: string; enabled: boolean; updated_at?: string }
@@ -1663,6 +1709,59 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_paystack_payment: {
+        Args: {
+          p_reference: string
+          p_amount: number
+          p_currency: string
+          p_paystack_id: string
+          p_channel: string
+          p_paid_at?: string | null
+        }
+        Returns: string
+      }
+      billing_catalog: {
+        Args: never
+        Returns: Json
+      }
+      billing_quote: {
+        Args: { p_school_id: string; p_kind: string; p_plan?: string | null; p_period_id?: string | null; p_students?: number | null }
+        Returns: { amount: number; students: number | null; credits: number | null; plan: string | null; period_name: string | null; description: string }[]
+      }
+      create_purchase: {
+        Args: { p_school_id: string; p_kind: string; p_plan?: string | null; p_period_id?: string | null; p_students?: number | null }
+        Returns: { id: string; reference: string; amount: number }[]
+      }
+      mark_purchase_failed: {
+        Args: { p_reference: string; p_reason: string }
+        Returns: undefined
+      }
+      purchase_for_payment: {
+        Args: { p_purchase_id: string }
+        Returns: { reference: string; amount: number; currency: string; email: string; school_id: string; description: string }[]
+      }
+      school_billing: {
+        Args: { p_school_id: string }
+        Returns: {
+          plan: string | null
+          period_name: string | null
+          starts_on: string | null
+          ends_on: string | null
+          students_paid: number | null
+          students_used: number
+          student_limit: number | null
+          trial_ends_on: string | null
+          sms_allowed: boolean
+          absence_alerts: boolean
+          present_alerts: boolean
+          sms_credits: number
+          plans: string[]
+        }[]
+      }
+      school_features: {
+        Args: { p_school_id: string }
+        Returns: { sms: boolean; absence_alerts: boolean; present_alerts: boolean }[]
+      }
       forget_push_token: {
         Args: { p_token: string }
         Returns: undefined
@@ -2087,6 +2186,9 @@ export type Database = {
           is_workspace: boolean
           student_limit: number | null
           custom_limit: boolean
+          plan: string | null
+          plan_ends_on: string | null
+          trial_ends_on: string | null
         }[]
       }
       registers_today: {

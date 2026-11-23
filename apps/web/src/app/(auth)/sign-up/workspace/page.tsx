@@ -37,7 +37,10 @@ export default function WorkspaceSignUpPage() {
       </ActionForm>
 
       <p className="mt-5 text-sm text-muted">
-        Already registered?{" "}
+        <a href="/pricing" className="text-accent hover:underline">
+          See prices
+        </a>{" "}
+        · Already registered?{" "}
         <Link href="/sign-in" className="text-accent hover:underline">
           Sign in
         </Link>

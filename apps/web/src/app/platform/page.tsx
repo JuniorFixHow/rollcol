@@ -1,3 +1,4 @@
+import { PLAN_INFO, isPlanCode } from "@rollcol/shared";
 import type { Database } from "@rollcol/shared";
 import { formatPhoneForDisplay } from "@rollcol/shared";
 import type { Metadata } from "next";
@@ -107,6 +108,13 @@ async function Schools() {
                 {school.student_limit ? ` of ${school.student_limit}` : ""} students
                 {school.is_workspace ? <span className="block text-xs text-muted">(limit across the owner&apos;s workspaces)</span> : null}
                 {school.custom_limit ? <span className="block text-xs text-accent">Own limit</span> : null}
+                {school.plan && isPlanCode(school.plan) ? (
+                  <span className="block text-xs text-success">
+                    {PLAN_INFO[school.plan].name} until {formatDate(school.plan_ends_on)}
+                  </span>
+                ) : school.trial_ends_on && school.trial_ends_on >= new Date().toISOString().slice(0, 10) ? (
+                  <span className="block text-xs text-muted">Trial until {formatDate(school.trial_ends_on)}</span>
+                ) : null}
                 <span className="block text-muted">{school.staff_count} staff</span>
                 {school.status === "verified" && !school.is_workspace ? (
                   <ActionForm action={setStudentLimit} className="mt-2 space-y-1">

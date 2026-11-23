@@ -45,9 +45,12 @@ function isKind(value: unknown): value is Kind {
 export default async function MessagesPage({ searchParams }: PageProps<"/dashboard/messages">) {
   const { supabase, member } = await requireStaff();
   const { school } = member;
-  if (school.type === "tertiary" || school.isWorkspace) notFound();
+  if (school.type === "tertiary") notFound();
+  // SMS follows the plan: verified schools, and classes workspaces on the Alerts plan.
+  const { data: features } = await supabase.rpc("school_features", { p_school_id: school.id });
+  const verified = features?.[0]?.sms === true;
+  if (school.isWorkspace && !verified) notFound();
   const isAdmin = member.role === "admin";
-  const verified = school.status === "verified";
   const kindParam = (await searchParams).kind;
   const kind = isKind(kindParam) ? kindParam : null;
 
@@ -84,7 +87,7 @@ export default async function MessagesPage({ searchParams }: PageProps<"/dashboa
       />
 
       <div className="space-y-6">
-        {!verified ? (
+        {!verified && !school.isWorkspace ? (
           <Notice tone="warning" title="SMS starts after verification">
             RollCol calls your school to confirm it before any SMS goes out. Until then, registers work as normal but no
             guardian is texted.

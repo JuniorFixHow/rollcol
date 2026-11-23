@@ -118,6 +118,41 @@ Students get push notifications on their phones (session open, 5 minutes left, p
 
 Phones register for notifications in the mobile app (Part 5b).
 
+## Payments with Paystack (Part 8)
+
+Plans and SMS packs are paid on the website's **Billing** page through Paystack. The Paystack secret key lives only in the `paystack` Edge Function; the website never sees it. The mobile app never shows payments.
+
+### Set up (test mode)
+
+1. Create a Paystack account at https://paystack.com (Ghana, currency GHS). While testing, stay in **Test mode**.
+2. In Paystack, open **Settings > API Keys & Webhooks** and copy the **Test Secret Key** (`sk_test_...`).
+3. Give it to the Edge Function, with the website's address:
+   ```
+   pnpm exec supabase secrets set PAYSTACK_SECRET_KEY=sk_test_... SITE_URL=https://rollcol.vercel.app
+   ```
+4. Deploy the function (it checks Paystack's signature itself, so no Supabase login is needed for the webhook):
+   ```
+   pnpm exec supabase functions deploy paystack --no-verify-jwt
+   ```
+5. In Paystack, **Settings > API Keys & Webhooks**, set the **Test Webhook URL** to
+   `https://<your-project-ref>.supabase.co/functions/v1/paystack`
+   (the project ref is in your Supabase project's URL), and **Test Callback URL** to `https://rollcol.vercel.app/dashboard/billing/return`.
+
+A payment counts only when Paystack confirms it (on return to RollCol, or by the webhook), for the exact amount and currency. Both can arrive; the second changes nothing.
+
+### Go live
+
+Switch Paystack to **Live mode**, then repeat steps 2, 3 and 5 with the **Live** secret key and live webhook and callback URLs. Do this in launch preparation (Part 11), with the own domain.
+
+### Prices
+
+Prices are stored in the database, in pesewas, and the Pricing and Billing pages read them from there. To change one, in Supabase SQL Editor:
+```sql
+insert into private.config (key, value) values ('price_alerts', '350')
+on conflict (key) do update set value = excluded.value;
+```
+Keys: `price_alerts`, `price_complete`, `price_standard`, `price_workspace_alerts`, `price_workspace_standard`, `trial_days`, `complete_credits_per_student`, `sms_packs` (JSON, for example `[{"credits":100,"price":2000}]`), `free_students_non_tertiary`, `free_students_tertiary`, `workspace_free_students`. The Pricing page updates within an hour.
+
 ## Mobile development build (Part 5b)
 
 The app uses native features (location, camera, Face ID, notifications), so it runs in a development build instead of Expo Go. Build once; later changes to screens load without rebuilding.

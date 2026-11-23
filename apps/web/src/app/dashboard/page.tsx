@@ -45,7 +45,9 @@ export default async function OverviewPage({ searchParams }: PageProps<"/dashboa
         ? "until verified"
         : usage?.plan === "custom"
           ? "this school's plan"
-          : "free plan";
+          : usage?.plan === "paid"
+            ? `this ${periodWord(school.type)}'s plan`
+            : "free plan";
   const nearLimit = usage?.student_limit ? usage.used >= Math.floor(usage.student_limit * 0.9) : false;
 
   const stats = [
@@ -116,13 +118,22 @@ export default async function OverviewPage({ searchParams }: PageProps<"/dashboa
         ) : null}
         {nearLimit && usage?.student_limit && !workspace && school.status === "verified" ? (
           <Notice tone="warning" title={usage.used >= usage.student_limit ? "Your school has reached its student limit" : "Your school is close to its student limit"}>
-            {usage.used} of {usage.student_limit} students. Students you turn off (for example those who have left) do not count.
-            Paid plans with more students are coming; until then, contact RollCol to add more.
+            {usage.used} of {usage.student_limit} students. Students you turn off (for example those who have left) do not count.{" "}
+            {isAdmin ? (
+              <Link href="/dashboard/billing" className="font-medium text-accent hover:underline">
+                {usage.plan === "paid" ? "Pay for more students" : "Choose a plan"}
+              </Link>
+            ) : (
+              "An admin can add room on the Billing page."
+            )}
           </Notice>
         ) : null}
         {nearLimit && usage?.student_limit && workspace ? (
           <Notice tone="warning" title="Your workspaces are close to the free limit">
-            {usage.used} of {usage.student_limit} students across all your workspaces.
+            {usage.used} of {usage.student_limit} students across all your workspaces.{" "}
+            <Link href="/dashboard/billing" className="font-medium text-accent hover:underline">
+              See plans
+            </Link>
           </Notice>
         ) : null}
         {school.status === "suspended" ? (
