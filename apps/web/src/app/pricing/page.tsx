@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { SiteFooter, SiteHeader } from "@/components/site-chrome";
 import { LinkButton } from "@/components/ui";
 import { getCatalog } from "@/lib/billing";
+import { PricingCalculator } from "./pricing-calculator";
 
 export const metadata: Metadata = {
   title: "Pricing",
@@ -174,6 +175,14 @@ function Plans({ catalog }: { catalog: BillingCatalog }) {
           ))}
         </div>
       </section>
+
+      <section id="calculator" className="scroll-mt-6">
+        <h2 className="text-2xl font-semibold tracking-tight">Work out your price</h2>
+        <p className="mt-2 max-w-2xl text-muted">Choose who it is for and how many students you have.</p>
+        <div className="mt-6">
+          <PricingCalculator catalog={catalog} />
+        </div>
+      </section>
     </div>
   );
 }
@@ -239,6 +248,7 @@ export default function PricingPage() {
               ["#tertiary", "Universities and colleges"],
               ["#workspaces", "Teachers on their own"],
               ["#sms", "SMS credits"],
+              ["#calculator", "Price calculator"],
               ["#questions", "Questions"],
             ].map(([href, label]) => (
               <a key={href} href={href} className="rounded-full border border-line px-3 py-1 text-muted hover:text-foreground">

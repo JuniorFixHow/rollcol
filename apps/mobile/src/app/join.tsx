@@ -17,7 +17,7 @@ export default function JoinScreen() {
         </Body>
       </View>
       <JoinSchoolForm />
-      <Button label="Sign out" variant="link" onPress={() => void forgetThisPhonesPush().then(() => supabase.auth.signOut())} />
+      <Button label="Sign out" variant="link" onPress={() => void forgetThisPhonesPush().then(() => supabase.auth.signOut({ scope: "local" }))} />
     </Screen>
   );
 }

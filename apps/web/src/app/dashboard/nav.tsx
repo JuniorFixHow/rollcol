@@ -7,6 +7,8 @@ import { type ReactNode, useEffect, useState } from "react";
 export interface NavItem {
   href: string;
   label: string;
+  /** A count shown beside the link, such as unread notifications. */
+  badge?: number;
 }
 
 /** A heading with its links. Groups without a title are shown as plain links. */
@@ -53,7 +55,15 @@ function NavLinks({ groups, onNavigate }: { groups: NavGroup[]; onNavigate?: () 
           active ? "bg-accent-soft text-accent" : "text-muted hover:bg-surface-muted hover:text-foreground"
         }`}
       >
-        {item.label}
+        <span className="flex items-center justify-between gap-2">
+          {item.label}
+          {item.badge ? (
+            <span className="min-w-5 rounded-full bg-accent px-1.5 text-center text-xs leading-5 font-semibold text-white tabular-nums">
+              {item.badge > 99 ? "99+" : item.badge}
+              <span className="sr-only"> unread</span>
+            </span>
+          ) : null}
+        </span>
       </Link>
     );
   };

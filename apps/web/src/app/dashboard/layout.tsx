@@ -39,6 +39,10 @@ async function Sidebar() {
   const tertiary = school.type === "tertiary";
   // A workspace is one person: no staff, no programmes or batches, and SMS only on the Alerts plan.
   const workspace = school.isWorkspace;
+  const { count: unread } = await supabase
+    .from("push_outbox")
+    .select("id", { count: "exact", head: true })
+    .is("read_at", null);
   const workspaceSms =
     workspace && !tertiary ? (await supabase.rpc("school_features", { p_school_id: school.id })).data?.[0]?.sms === true : false;
 
@@ -79,6 +83,7 @@ async function Sidebar() {
               { href: "/dashboard/billing", label: "Billing" },
             ]
           : []),
+        { href: "/dashboard/notifications", label: "Notifications", badge: unread ?? 0 },
         { href: "/dashboard/account", label: "Your account" },
       ],
     },

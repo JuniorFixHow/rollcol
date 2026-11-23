@@ -6,6 +6,7 @@ import { Badge, Card, EmptyState, Notice, PageHeader, Table, Td, formatDate, for
 import { requireAdmin } from "@/lib/auth";
 import { getCatalog } from "@/lib/billing";
 import { startPurchase } from "./actions";
+import { PaymentCheckNotice } from "./payment-check";
 import { PlanPicker } from "./plan-picker";
 
 export const metadata: Metadata = { title: "Billing" };
@@ -14,6 +15,12 @@ const STATUS_TONE = { paid: "success", pending: "neutral", failed: "danger" } as
 
 function dates(from: string, to: string) {
   return `${formatDate(from)} to ${formatDate(to)}`;
+}
+
+/** A payment started in the last two days that Paystack has not confirmed yet. */
+function hasRecentPending(purchases: readonly { status: string; created_at: string }[]): boolean {
+  const since = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+  return purchases.some((p) => p.status === "pending" && p.created_at >= since);
 }
 
 export default async function BillingPage({ searchParams }: PageProps<"/dashboard/billing">) {
@@ -52,6 +59,7 @@ export default async function BillingPage({ searchParams }: PageProps<"/dashboar
   const onTrial = !current && billing.trial_ends_on !== null && billing.trial_ends_on >= today;
   const freeLimit = school.isWorkspace ? catalog.free.workspace : school.type === "tertiary" ? catalog.free.tertiary : catalog.free.non_tertiary;
   const purchases = purchasesResult.data ?? [];
+  const recentPending = hasRecentPending(purchases);
 
   const planTitle = current
     ? `${PLAN_INFO[current].name} plan`
@@ -81,10 +89,8 @@ export default async function BillingPage({ searchParams }: PageProps<"/dashboar
             Thank you. Your receipt is in the list below.
           </Notice>
         ) : null}
-        {params.paid === "pending" ? (
-          <Notice title="Waiting for Paystack">
-            Paystack has not confirmed the payment yet. Mobile Money can take a minute; this page shows it as paid once it is.
-          </Notice>
+        {params.paid !== "1" && (params.paid === "pending" || recentPending) ? (
+          <PaymentCheckNotice cameBack={params.paid === "pending"} />
         ) : null}
         {params.paid === "failed" ? (
           <Notice tone="warning" title="The payment did not go through">

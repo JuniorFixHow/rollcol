@@ -28,6 +28,9 @@ export function SiteFooter() {
       <Link href="/privacy" className="hover:text-foreground">
         Privacy policy
       </Link>
+      <Link href="/terms" className="hover:text-foreground">
+        Terms of use
+      </Link>
       <span>RollCol by Teqxa</span>
     </footer>
   );

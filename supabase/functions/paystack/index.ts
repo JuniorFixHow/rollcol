@@ -58,7 +58,16 @@ Deno.serve(async (request: Request) => {
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const siteUrl = (Deno.env.get("SITE_URL") ?? "https://rollcol.vercel.app").replace(/\/+$/, "");
-  if (!secretKey || !url || !anonKey || !serviceKey) return json({ error: "Payments are not set up yet." }, 500);
+  const missing = [
+    ["PAYSTACK_SECRET_KEY", secretKey],
+    ["SUPABASE_URL", url],
+    ["SUPABASE_ANON_KEY", anonKey],
+    ["SUPABASE_SERVICE_ROLE_KEY", serviceKey],
+  ].filter(([, value]) => !value).map(([name]) => name);
+  if (!secretKey || !url || !anonKey || !serviceKey) {
+    console.error("paystack: missing secrets", missing);
+    return json({ error: `Payments are not set up yet. Missing secret: ${missing.join(", ")}.` }, 500);
+  }
 
   const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
 
@@ -78,7 +87,11 @@ Deno.serve(async (request: Request) => {
       p_channel: transaction.channel,
       p_paid_at: transaction.paid_at,
     });
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("paystack: apply_paystack_payment failed", transaction.reference, error.message);
+      throw new Error(`The payment could not be recorded: ${error.message}`);
+    }
+    if (data === "unknown") console.error("paystack: no purchase with reference", transaction.reference);
     return typeof data === "string" ? data : "unknown";
   }
 
@@ -99,6 +112,7 @@ Deno.serve(async (request: Request) => {
         const result = await apply(event.data);
         return json({ received: true, result });
       } catch (caught) {
+        console.error("paystack: webhook could not apply", event.data.reference, caught);
         // Paystack retries the webhook when it does not get a 200.
         return json({ error: caught instanceof Error ? caught.message : "Could not apply." }, 500);
       }
@@ -124,7 +138,10 @@ Deno.serve(async (request: Request) => {
     // The database checks the caller is an admin of the school and the purchase is unpaid.
     const { data: rows, error } = await asUser.rpc("purchase_for_payment", { p_purchase_id: body.purchaseId });
     const purchase = Array.isArray(rows) ? rows[0] : null;
-    if (error || !purchase) return json({ error: error?.message ?? "Payment not found." }, 400);
+    if (error || !purchase) {
+      console.error("paystack: purchase_for_payment failed", body.purchaseId, error?.message);
+      return json({ error: error?.message ?? "Payment not found." }, 400);
+    }
 
     const response = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
@@ -139,22 +156,39 @@ Deno.serve(async (request: Request) => {
         metadata: { purchase_id: body.purchaseId, school_id: purchase.school_id, description: purchase.description },
       }),
     });
-    const result: { status?: boolean; message?: string; data?: { authorization_url?: string } } = await response.json();
+    const result: { status?: boolean; message?: string; data?: { authorization_url?: string } } = await response
+      .json()
+      .catch(() => ({ status: false, message: `Paystack answered with error ${response.status}.` }));
     if (!response.ok || !result.status || !result.data?.authorization_url) {
-      return json({ error: result.message ?? "Paystack did not accept the payment." }, 502);
+      console.error("paystack: initialize refused", response.status, result.message);
+      return json({ error: `Paystack refused the payment: ${result.message ?? response.status}` }, 502);
     }
     return json({ authorizationUrl: result.data.authorization_url });
   }
 
   if (body.action === "verify" && typeof body.reference === "string") {
     // Only the purchase's own school admins may ask (RLS on billing_purchases).
-    const { data: own } = await asUser.from("billing_purchases").select("id").eq("reference", body.reference).maybeSingle();
-    if (!own) return json({ error: "Payment not found." }, 404);
+    const { data: own, error: ownError } = await asUser
+      .from("billing_purchases")
+      .select("id")
+      .eq("reference", body.reference)
+      .maybeSingle();
+    if (!own) {
+      console.error("paystack: verify could not see purchase", body.reference, ownError?.message);
+      return json({ error: ownError?.message ?? "This payment is not one of your school's." }, 404);
+    }
     const response = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(body.reference)}`, {
       headers: { Authorization: `Bearer ${secretKey}` },
     });
-    const result: { status?: boolean; message?: string; data?: unknown } = await response.json();
+    const result: { status?: boolean; message?: string; data?: unknown } = await response
+      .json()
+      .catch(() => ({ status: false, message: `Paystack answered with error ${response.status}.` }));
+    if (response.status === 401) {
+      console.error("paystack: secret key refused by Paystack");
+      return json({ error: "Paystack refused the secret key. Check PAYSTACK_SECRET_KEY." }, 502);
+    }
     if (!response.ok || !result.status || !isTransaction(result.data)) {
+      console.error("paystack: verify not confirmed", body.reference, response.status, result.message);
       return json({ status: "pending", message: result.message ?? "Paystack has not confirmed this payment yet." });
     }
     if (result.data.status === "abandoned" || result.data.status === "ongoing" || result.data.status === "pending") {
@@ -163,6 +197,7 @@ Deno.serve(async (request: Request) => {
     try {
       return json({ status: await apply(result.data) });
     } catch (caught) {
+      console.error("paystack: verify could not apply", body.reference, caught);
       return json({ error: caught instanceof Error ? caught.message : "Could not apply." }, 500);
     }
   }

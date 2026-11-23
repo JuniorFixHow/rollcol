@@ -1,7 +1,7 @@
 import "react-native-url-polyfill/auto";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Database } from "@rollcol/shared";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, processLock } from "@supabase/supabase-js";
 import { AppState, Platform } from "react-native";
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -23,6 +23,10 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
+    // Without a lock, the start-up refresh and the foreground refresh can both
+    // spend the same refresh token. Supabase treats that as token reuse and ends
+    // the session, which signed people out between launches.
+    lock: processLock,
   },
 });
 

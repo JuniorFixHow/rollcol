@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { type FormState, failed, formValues } from "@/lib/forms";
+import { callPaystack } from "@/lib/paystack";
 
 const KINDS = ["plan", "seats", "upgrade", "credits"] as const;
 type Kind = (typeof KINDS)[number];
@@ -36,13 +37,51 @@ export async function startPurchase(_: FormState, formData: FormData): Promise<F
   const purchase = data[0];
   if (!purchase) return failed("We could not start the payment. Please try again.", values);
 
-  const { data: started, error: startError } = await supabase.functions.invoke<{ authorizationUrl?: string; error?: string }>(
-    "paystack",
-    { body: { action: "initialize", purchaseId: purchase.id } },
-  );
-  const url = started?.authorizationUrl;
-  if (startError || !url || !url.startsWith("https://")) {
-    return failed(started?.error ?? "Paystack could not be reached. Please try again in a moment.", values);
-  }
+  const started = await callPaystack(supabase, { action: "initialize", purchaseId: purchase.id });
+  if (!started.ok) return failed(`Paystack could not start the payment: ${started.message}`, values);
+  const url = started.data.authorizationUrl;
+  if (!url || !url.startsWith("https://")) return failed("Paystack did not return a payment page. Please try again.", values);
   redirect(url);
+}
+
+export interface PaymentCheck {
+  /** Payments Paystack confirmed during this check. */
+  applied: number;
+  /** Payments Paystack has not finished yet. */
+  waiting: number;
+  /** Why a check could not be made, if it could not. */
+  problem: string | null;
+}
+
+/**
+ * Asks Paystack about this school's payments from the last two days that are
+ * still not completed. A payment is applied here even when Paystack's webhook
+ * was late or missing, and nothing is applied unless Paystack confirms it.
+ */
+export async function checkPendingPayments(): Promise<PaymentCheck> {
+  const { supabase, member } = await requireAdmin();
+  const since = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: pending, error } = await supabase
+    .from("billing_purchases")
+    .select("reference")
+    .eq("school_id", member.school.id)
+    .eq("status", "pending")
+    .gte("created_at", since)
+    .order("created_at", { ascending: false })
+    .limit(5);
+  if (error) return { applied: 0, waiting: 0, problem: error.message };
+
+  let applied = 0;
+  let waiting = 0;
+  let problem: string | null = null;
+  for (const { reference } of pending ?? []) {
+    const result = await callPaystack(supabase, { action: "verify", reference });
+    if (!result.ok) {
+      problem = result.message;
+      continue;
+    }
+    if (result.data.status === "paid" || result.data.status === "already_paid") applied += 1;
+    else if (result.data.status === "pending") waiting += 1;
+  }
+  return { applied, waiting, problem };
 }

@@ -146,7 +146,7 @@ export default function AccountScreen() {
           onPress={() =>
             void forgetThisPhonesPush()
               .then(() => forgetActiveSchool())
-              .then(() => supabase.auth.signOut())
+              .then(() => supabase.auth.signOut({ scope: "local" }))
           }
         />
       </View>

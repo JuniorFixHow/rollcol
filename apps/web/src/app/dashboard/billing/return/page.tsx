@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
+import { callPaystack } from "@/lib/paystack";
 
 export const metadata: Metadata = { title: "Payment" };
 
@@ -15,12 +16,13 @@ export default async function PaymentReturnPage({ searchParams }: PageProps<"/da
   const reference = typeof params.reference === "string" ? params.reference : typeof params.trxref === "string" ? params.trxref : "";
   if (!/^RC[0-9A-Z]{6,30}$/.test(reference)) redirect("/dashboard/billing");
 
-  const { data } = await supabase.functions.invoke<{ status?: string }>("paystack", { body: { action: "verify", reference } });
-  const status = data?.status;
+  const result = await callPaystack(supabase, { action: "verify", reference });
+  // When the check itself fails, the Billing page checks again and shows why.
+  const status = result.ok ? result.data.status : "pending";
   redirect(
     status === "paid" || status === "already_paid"
       ? "/dashboard/billing?paid=1"
-      : status === "pending" || status === undefined
+      : status === "pending"
         ? "/dashboard/billing?paid=pending"
         : "/dashboard/billing?paid=failed",
   );

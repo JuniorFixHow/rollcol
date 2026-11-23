@@ -27,7 +27,11 @@ export default function SignUpPage() {
           Create school account
         </SubmitButton>
         <p className="text-xs text-muted">
-          By registering, you agree to handle student and guardian details as described in our{" "}
+          By registering, you agree to our{" "}
+          <a href="/terms" className="text-accent hover:underline">
+            terms of use
+          </a>{" "}
+          and to handle student and guardian details as described in our{" "}
           <a href="/privacy" className="text-accent hover:underline">
             privacy policy
           </a>

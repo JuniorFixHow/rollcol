@@ -40,7 +40,7 @@ async function deleteAccount(): Promise<FormState> {
   const { error: deleteError } = await createAdminClient().auth.admin.deleteUser(userId);
   if (deleteError) return failed("We could not delete your account. Please try again or contact support.");
 
-  await supabase.auth.signOut();
+  await supabase.auth.signOut({ scope: "local" });
   redirect("/?deleted=1");
 }
 
