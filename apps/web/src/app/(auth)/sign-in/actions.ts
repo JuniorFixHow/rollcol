@@ -1,6 +1,13 @@
 "use server";
 
-import { chooseMember, emailSignInSchema, schoolIdSignInSchema, toMemberships } from "@rollcol/shared";
+import {
+  chooseMember,
+  emailSignInSchema,
+  formatPhoneForDisplay,
+  normalisePhone,
+  schoolIdSignInSchema,
+  toMemberships,
+} from "@rollcol/shared";
 import { redirect } from "next/navigation";
 import { homeFor } from "@/lib/auth";
 import { type FormState, failed, formValues, invalid } from "@/lib/forms";
@@ -86,4 +93,47 @@ function lookupResult(value: unknown): { status: "ok"; email: string } | { statu
   if (status === "ok" && typeof email === "string") return { status: "ok", email };
   if (status === "locked") return { status: "locked" };
   return { status: "invalid" };
+}
+
+/** Turns Supabase Auth's answer about a sign-in code into words a parent understands. */
+function describeCodeError(error: { message: string; status?: number; code?: string }): string {
+  if (error.status === 429 || error.code === "over_sms_send_rate_limit") {
+    return "Too many codes were sent to this number. Wait a few minutes, then try again.";
+  }
+  if (/guardian list/i.test(error.message)) {
+    return "This number is not on your child's school records in RollCol. Use the number the school has, or ask the school to add it.";
+  }
+  if (/test mode/i.test(error.message)) return "RollCol cannot send sign-in codes yet (SMS is in test mode).";
+  return "RollCol could not send the code. Please try again in a moment.";
+}
+
+/** Parents, step 1: a six-digit code by SMS to the number their child's school has. */
+export async function sendParentCode(_: FormState, formData: FormData): Promise<FormState> {
+  const values = formValues(formData);
+  const phone = normalisePhone(values.phone ?? "");
+  if (!phone) return failed("Enter a phone number, for example 024 123 4567.", values);
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithOtp({ phone });
+  if (error) return failed(describeCodeError(error), values);
+  return { status: "success", message: `We sent a code to ${formatPhoneForDisplay(phone)}.`, values: { phone } };
+}
+
+/** Parents, step 2: the code from the SMS signs them in. */
+export async function verifyParentCode(_: FormState, formData: FormData): Promise<FormState> {
+  const values = formValues(formData);
+  const phone = normalisePhone(values.phone ?? "");
+  const token = (values.code ?? "").replace(/\D/g, "");
+  if (!phone) return failed("Start again with your phone number.", values);
+  if (token.length !== 6) return failed("Enter the six-digit code from the SMS.", { phone });
+  const supabase = await createClient();
+  const { error } = await supabase.auth.verifyOtp({ phone, token, type: "sms" });
+  if (error) {
+    return failed(
+      error.status === 429
+        ? "Too many attempts. Wait a few minutes, then try again."
+        : "That code is not right, or it has expired. Check it, or send a new code.",
+      { phone },
+    );
+  }
+  redirect("/parent");
 }

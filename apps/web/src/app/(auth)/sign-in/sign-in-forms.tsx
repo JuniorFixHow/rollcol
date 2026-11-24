@@ -4,20 +4,22 @@ import Link from "next/link";
 import { useState } from "react";
 import { ActionForm, FormMessage, SubmitButton, TextField } from "@/components/form";
 import { signInWithEmail, signInWithSchoolId } from "./actions";
+import { ParentSignIn } from "./parent-sign-in";
 
 export function SignInForms({ next }: { next: string | null }) {
-  const [method, setMethod] = useState<"school" | "email">("school");
+  const [method, setMethod] = useState<"school" | "email" | "parent">("school");
 
   return (
     <div className="rounded-lg border border-line bg-surface p-6 shadow-sm">
       <h1 className="text-xl font-semibold">Sign in</h1>
-      <p className="mt-1 text-sm text-muted">For school admins and teachers. Students use the RollCol mobile app.</p>
+      <p className="mt-1 text-sm text-muted">For school admins, teachers and parents. Students use the RollCol mobile app.</p>
 
-      <div role="tablist" aria-label="Sign-in method" className="mt-5 grid grid-cols-2 rounded-md bg-surface-muted p-1 text-sm">
+      <div role="tablist" aria-label="Sign-in method" className="mt-5 grid grid-cols-3 rounded-md bg-surface-muted p-1 text-sm">
         {(
           [
             ["school", "School ID"],
             ["email", "Email"],
+            ["parent", "Parent"],
           ] as const
         ).map(([value, label]) => (
           <button
@@ -34,7 +36,9 @@ export function SignInForms({ next }: { next: string | null }) {
       </div>
 
       <div className="mt-5">
-        {method === "school" ? (
+        {method === "parent" ? (
+          <ParentSignIn />
+        ) : method === "school" ? (
           <ActionForm action={signInWithSchoolId} key="school">
             {next ? <input type="hidden" name="next" value={next} /> : null}
             <TextField

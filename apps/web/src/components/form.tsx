@@ -18,7 +18,7 @@ import { type FormState, initialFormState } from "@/lib/forms";
 
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
 
-const FormStateContext = createContext<FormState>(initialFormState);
+export const FormStateContext = createContext<FormState>(initialFormState);
 
 /**
  * A form wired to a Server Action through useActionState. Fields inside read

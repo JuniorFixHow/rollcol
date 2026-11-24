@@ -17,7 +17,15 @@ export interface WebNotification {
   href: string | null;
 }
 
-export function NotificationList({ items: initial, failed }: { items: WebNotification[]; failed: boolean }) {
+export function NotificationList({
+  items: initial,
+  failed,
+  emptyText = "No notifications. You are told here, for example, when someone asks to move a workspace into your school, and whether your own request was approved.",
+}: {
+  items: WebNotification[];
+  failed: boolean;
+  emptyText?: string;
+}) {
   const router = useRouter();
   // Removed here before the server confirms; null means all of them.
   const [removed, setRemoved] = useState<number[] | null>([]);
@@ -48,10 +56,7 @@ export function NotificationList({ items: initial, failed }: { items: WebNotific
     <div className="space-y-3">
       {error ? <Notice tone="danger">{error}</Notice> : null}
       {items.length === 0 ? (
-        <EmptyState>
-          No notifications. You are told here, for example, when someone asks to move a workspace into your school, and
-          whether your own request was approved.
-        </EmptyState>
+        <EmptyState>{emptyText}</EmptyState>
       ) : (
         <>
           <div className="flex justify-end">

@@ -27,7 +27,8 @@ function namesOf(effects: readonly DeletionEffect[]): string {
 
 async function deleteAccount(): Promise<FormState> {
   "use server";
-  const { supabase, userId } = await requireUser();
+  const { isParent, supabase, userId } = await requireUser();
+  if (isParent) redirect("/parent");
 
   // Ask the database what deletion would do. It also blocks the last admin itself.
   const { data: effects, error } = await supabase.rpc("account_deletion_effects");

@@ -26,7 +26,10 @@ export const getSession = cache(async () => {
   const { data: claimsData } = await supabase.auth.getClaims();
   const userId = claimsData?.claims?.sub;
   if (!userId) return null;
-  const email = typeof claimsData.claims.email === "string" ? claimsData.claims.email : null;
+  const email = typeof claimsData.claims.email === "string" && claimsData.claims.email !== "" ? claimsData.claims.email : null;
+  const phone = typeof claimsData.claims.phone === "string" && claimsData.claims.phone !== "" ? claimsData.claims.phone : null;
+  // Parents sign in with their phone number and a code; everyone else has an email.
+  const isParent = phone !== null && email === null;
 
   const [membershipsResult, adminResult, cookieStore] = await Promise.all([
     supabase.rpc("my_memberships"),
@@ -44,7 +47,7 @@ export const getSession = cache(async () => {
     preferKind: "staff",
   });
 
-  return { supabase, userId, email, memberships, member };
+  return { supabase, userId, email, phone, isParent, memberships, member };
 });
 
 /** A signed-in user, with or without a school. */
@@ -58,10 +61,19 @@ export async function requireUser() {
 export async function requireStaff() {
   const session = await requireUser();
   const { member } = session;
+  if (session.isParent) redirect("/parent");
   if (member.kind === "none") redirect(member.isPlatformAdmin ? "/platform" : "/onboarding");
   if (member.kind === "student") redirect("/students-use-the-app");
   if (member.status !== "active") redirect("/account/disabled");
   return { ...session, member };
+}
+
+/** A parent account (signed in with a phone number). Others go to their own home. */
+export async function requireParent() {
+  const session = await requireUser();
+  if (!session.isParent) redirect(homeFor(session.member));
+  const phone = session.phone ?? "";
+  return { ...session, phone: phone.startsWith("+") ? phone : `+${phone}` };
 }
 
 export async function requireAdmin() {

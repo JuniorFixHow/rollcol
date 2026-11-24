@@ -149,7 +149,7 @@ export default async function MessagesPage({ searchParams }: PageProps<"/dashboa
                     </span>
                     <Link
                       href={`/dashboard/messages/${sms.id}`}
-                      className="line-clamp-2 block whitespace-pre-wrap hover:text-accent"
+                      className="line-clamp-2 break-words whitespace-pre-line hover:text-accent"
                       title="Open the whole message"
                     >
                       {sms.body}

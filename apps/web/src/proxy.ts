@@ -4,7 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 
 /** Paths that need a signed-in user. Pages still check membership themselves. */
-const PROTECTED = ["/dashboard", "/platform", "/onboarding", "/account"];
+const PROTECTED = ["/dashboard", "/platform", "/onboarding", "/account", "/parent"];
 
 /**
  * Refreshes the Supabase session cookie on every request and sends signed-out

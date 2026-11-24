@@ -20,7 +20,8 @@ export const instant = false;
 
 async function createSchool(_: FormState, formData: FormData): Promise<FormState> {
   "use server";
-  const { supabase } = await requireUser();
+  const { isParent, supabase } = await requireUser();
+  if (isParent) redirect("/parent");
 
   const values = formValues(formData);
   const parsed = schoolDetailsSchema.safeParse({
