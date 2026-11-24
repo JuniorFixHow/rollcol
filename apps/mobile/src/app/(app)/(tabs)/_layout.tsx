@@ -28,6 +28,7 @@ function useUnreadCount(enabled: boolean): number {
     const { count: unread } = await supabase
       .from("push_outbox")
       .select("id", { count: "exact", head: true })
+      .is("data->smsId", null) // school messages are listed in Messages
       .is("read_at", null);
     setCount(unread ?? 0);
   }, [enabled]);

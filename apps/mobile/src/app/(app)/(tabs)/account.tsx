@@ -1,16 +1,15 @@
 import { APPLE_STANDARD_EULA_URL } from "@rollcol/shared";
 import * as WebBrowser from "expo-web-browser";
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { ConfirmDialog } from "@/components/dialog";
-import { Row, SectionTitle } from "@/components/kit";
+import { ProfileHeader, SettingsGroup, SettingsRow, ThemeChooser } from "@/components/settings";
 import { formatDayTime } from "@/lib/format";
 import { usePhone } from "@/lib/phone";
 import { forgetThisPhonesPush } from "@/lib/push";
-import { usePalette } from "@/components/theme";
 import { type ThemeChoice, getTheme, setTheme } from "@/lib/appearance";
-import { Body, Button, Card, Message } from "@/components/ui";
+import { Message } from "@/components/ui";
 import { forgetActiveSchool, useSession } from "@/lib/session";
 import { WEB_URL, supabase } from "@/lib/supabase";
 
@@ -21,7 +20,6 @@ export default function AccountScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [theme, setThemeChoice] = useState<ThemeChoice>("system");
-  const palette = usePalette();
 
   useEffect(() => {
     void getTheme().then(setThemeChoice);
@@ -67,95 +65,89 @@ export default function AccountScreen() {
     await supabase.auth.signOut({ scope: "local" });
   }
 
+  const isMember = member !== null && member.kind !== "none";
+  const open = (url: string) => void WebBrowser.openBrowserAsync(url);
+  const phoneStatus = !phone
+    ? null
+    : phone.status === "active"
+      ? "Your check-in phone. Each student checks in from one phone."
+      : phone.status === "pending"
+        ? phone.needsAdmin
+          ? `Waiting for your school admin to approve it.${phone.activeLabel ? ` ${phone.activeLabel} is still your check-in phone.` : ""}`
+          : `Becomes your check-in phone on ${phone.activeFrom ? formatDayTime(phone.activeFrom) : "soon"}, unless your admin approves it sooner.`
+        : "Replaced by another phone. You check in on your other phone.";
+
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-      <Card>
-        <Body>{member && member.kind !== "none" ? member.fullName : ""}</Body>
-        <Body muted>{session?.user.email}</Body>
-        {member && member.kind !== "none" ? (
-          <Body muted>
-            {member.school.name} · {member.school.isWorkspace ? "Workspace" : "School"} code {member.school.code} · School ID {member.schoolNumber}
-          </Body>
-        ) : null}
-        {member && member.kind !== "none" ? (
-          <Body muted>One email and password work for all your schools and workspaces.</Body>
-        ) : null}
-      </Card>
-
-      {/* Everyone sees this: students also use it to join a lecturer's workspace or another school. */}
-      {member && member.kind !== "none" ? (
-        <Row
-          title="Your schools and workspaces"
-          subtitle={`Now: ${member.school.name}${memberships.length > 1 ? ` · tap to switch (${memberships.length} in all)` : ""}`}
-          onPress={() => router.push("/schools")}
-        />
-      ) : null}
-      <Row
-        title="Notifications"
-        subtitle="Choose which notifications you get on this phone"
-        onPress={() => router.push("/notification-settings")}
+      <ProfileHeader
+        name={isMember ? member.fullName : (session?.user.email ?? "")}
+        lines={[session?.user.email, isMember ? member.school.name : null]}
       />
 
-      {phone ? (
-        <View style={styles.group}>
-          <SectionTitle>This phone</SectionTitle>
-          <Card>
-            <Body>{phone.label}</Body>
-            <Body muted>
-              {phone.status === "active"
-                ? "Your check-in phone. Each student checks in from one phone."
-                : phone.status === "pending"
-                  ? phone.needsAdmin
-                    ? `Waiting for your school admin to approve it. ${phone.activeLabel ? `${phone.activeLabel} is still your check-in phone.` : ""}`
-                    : `Becomes your check-in phone on ${phone.activeFrom ? formatDayTime(phone.activeFrom) : "soon"}, unless your admin approves it sooner.`
-                  : "Replaced by another phone. You check in on your other phone."}
-            </Body>
-          </Card>
-        </View>
+      {isMember ? (
+        <SettingsGroup title="School" footer="One email and password work for all your schools and workspaces.">
+          {/* Everyone sees this: students also use it to join a lecturer's workspace or another school. */}
+          <SettingsRow
+            icon="business-outline"
+            title="Your schools and workspaces"
+            subtitle={memberships.length > 1 ? `${memberships.length} in all. Tap to switch or join another.` : "Tap to join another."}
+            onPress={() => router.push("/schools")}
+          />
+          <SettingsRow icon="key-outline" title={member.school.isWorkspace ? "Workspace code" : "School code"} value={member.school.code} />
+          <SettingsRow icon="id-card-outline" title="School ID" value={member.schoolNumber ?? "None"} />
+        </SettingsGroup>
       ) : null}
 
-      <View style={styles.group}>
-        <Text style={[styles.heading, { color: palette.text }]}>Appearance</Text>
-        <View accessibilityRole="radiogroup" style={[styles.segments, { borderColor: palette.line, backgroundColor: palette.surface }]}>
-          {(["system", "light", "dark"] as const).map((option) => {
-            const selected = theme === option;
-            return (
-              <Pressable
-                key={option}
-                accessibilityRole="radio"
-                accessibilityState={{ selected }}
-                onPress={() => chooseTheme(option)}
-                style={[styles.segment, selected ? { backgroundColor: palette.accentSoft } : null]}
-              >
-                <Text style={[styles.segmentText, { color: selected ? palette.accent : palette.muted }]}>
-                  {option === "system" ? "Automatic" : option === "light" ? "Light" : "Dark"}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
+      {phone && phoneStatus ? (
+        <SettingsGroup title="This phone">
+          <SettingsRow icon="phone-portrait-outline" title={phone.label} subtitle={phoneStatus} />
+        </SettingsGroup>
+      ) : null}
 
-      <View style={styles.group}>
-        <Button label="Change password" variant="secondary" onPress={() => void WebBrowser.openBrowserAsync(`${WEB_URL}/forgot-password`)} />
-        <Button label="Privacy policy" variant="secondary" onPress={() => void WebBrowser.openBrowserAsync(`${WEB_URL}/privacy`)} />
-        <Button label="Terms of Use" variant="secondary" onPress={() => void WebBrowser.openBrowserAsync(APPLE_STANDARD_EULA_URL)} />
-        <Button
-          label="Sign out"
-          variant="secondary"
+      <SettingsGroup title="Preferences">
+        <SettingsRow
+          icon="notifications-outline"
+          title="Notifications"
+          subtitle="Choose which notifications you get"
+          onPress={() => router.push("/notification-settings")}
+        />
+        <View>
+          <SettingsRow icon="contrast-outline" title="Appearance" />
+          <ThemeChooser
+            value={theme}
+            onChange={chooseTheme}
+            options={[
+              { value: "system", label: "Automatic" },
+              { value: "light", label: "Light" },
+              { value: "dark", label: "Dark" },
+            ]}
+          />
+        </View>
+      </SettingsGroup>
+
+      <SettingsGroup title="Account">
+        <SettingsRow icon="lock-closed-outline" title="Change password" external onPress={() => open(`${WEB_URL}/forgot-password`)} />
+        <SettingsRow
+          icon="log-out-outline"
+          title="Sign out"
           onPress={() =>
             void forgetThisPhonesPush()
               .then(() => forgetActiveSchool())
               .then(() => supabase.auth.signOut({ scope: "local" }))
           }
         />
-      </View>
+      </SettingsGroup>
 
-      <View style={styles.group}>
-        {error ? <Message>{error}</Message> : null}
-        <Button label="Delete account" variant="danger" onPress={() => void startDeletion()} busy={busy} />
-        <Body muted>Deleting your account removes your RollCol data. If your school also uses Stediis, your Stediis account is not affected.</Body>
-      </View>
+      <SettingsGroup title="About">
+        <SettingsRow icon="shield-checkmark-outline" title="Privacy policy" external onPress={() => open(`${WEB_URL}/privacy`)} />
+        <SettingsRow icon="document-text-outline" title="Terms of Use" external onPress={() => open(APPLE_STANDARD_EULA_URL)} />
+      </SettingsGroup>
+
+      {error ? <Message>{error}</Message> : null}
+      <SettingsGroup footer="Deleting your account removes your RollCol data. If your school also uses Stediis, your Stediis account is not affected.">
+        <SettingsRow icon="trash-outline" title="Delete account" danger busy={busy} onPress={() => void startDeletion()} />
+      </SettingsGroup>
+
       <ConfirmDialog
         visible={confirm !== null}
         title="Delete your account?"
@@ -174,10 +166,5 @@ export default function AccountScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 24, gap: 24 },
-  group: { gap: 12 },
-  heading: { fontSize: 15, fontWeight: "600" },
-  segments: { flexDirection: "row", borderWidth: 1, borderRadius: 10, padding: 3 },
-  segment: { flex: 1, alignItems: "center", paddingVertical: 10, borderRadius: 8 },
-  segmentText: { fontSize: 14, fontWeight: "600" },
+  content: { padding: 20, gap: 24, paddingBottom: 40 },
 });

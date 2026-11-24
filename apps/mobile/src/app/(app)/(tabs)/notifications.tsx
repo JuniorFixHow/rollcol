@@ -41,6 +41,7 @@ export default function NotificationsScreen() {
     const { data, error } = await supabase
       .from("push_outbox")
       .select("id, title, body, data, created_at, read_at")
+      .is("data->smsId", null) // school messages are listed in Messages
       .order("created_at", { ascending: false })
       .limit(100);
     setLoaded(true);

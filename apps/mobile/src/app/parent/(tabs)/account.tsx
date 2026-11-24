@@ -4,9 +4,10 @@ import * as WebBrowser from "expo-web-browser";
 import { useCallback, useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { ConfirmDialog } from "@/components/dialog";
-import { Badge, Row, SectionTitle } from "@/components/kit";
+import { Badge } from "@/components/kit";
+import { ProfileHeader, SettingsGroup, SettingsRow, ThemeChooser } from "@/components/settings";
 import { usePalette } from "@/components/theme";
-import { Body, Button, Card, Message } from "@/components/ui";
+import { Message } from "@/components/ui";
 import { type ThemeChoice, getTheme, setTheme } from "@/lib/appearance";
 import { forgetThisPhonesPush } from "@/lib/push";
 import { forgetActiveSchool, useSession } from "@/lib/session";
@@ -70,77 +71,82 @@ export default function ParentAccountScreen() {
     await supabase.auth.signOut({ scope: "local" });
   }
 
+  const open = (url: string) => void WebBrowser.openBrowserAsync(url);
+
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-      <Card>
-        <Body>{phone}</Body>
-        <Body muted>Parent account. You sign in with this number and a code sent by SMS.</Body>
-      </Card>
+      <ProfileHeader name={phone} lines={["Parent account", "You sign in with this number and a code sent by SMS."]} icon="call" />
 
-      <View style={styles.group}>
-        <SectionTitle>Schools</SectionTitle>
-        {links.length === 0 ? <Body muted>No school is linked yet.</Body> : null}
+      <SettingsGroup
+        title="Your children's schools"
+        footer="Removing a school stops you seeing those children here. You can add them again with one of their names."
+      >
         {links.map((link) => (
-          <Row
+          <SettingsRow
             key={link.id}
+            icon="school-outline"
             title={link.school_name}
             subtitle={link.status === "pending" ? "Waiting for the school to confirm" : link.children.join(", ")}
             right={
-              <Pressable accessibilityRole="button" accessibilityLabel={`Remove ${link.school_name}`} hitSlop={8} onPress={() => setUnlink(link)}>
-                {link.status === "pending" ? <Badge tone="warning">Waiting</Badge> : <Text style={[styles.remove, { color: palette.danger }]}>Remove</Text>}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`${link.status === "pending" ? "Cancel" : "Remove"} ${link.school_name}`}
+                hitSlop={10}
+                onPress={() => setUnlink(link)}
+              >
+                {link.status === "pending" ? (
+                  <Badge tone="warning">Waiting</Badge>
+                ) : (
+                  <Text style={[styles.remove, { color: palette.danger }]}>Remove</Text>
+                )}
               </Pressable>
             }
           />
         ))}
-        <Button label="Add a child" variant="secondary" onPress={() => router.push("/parent/link")} />
-      </View>
+        <SettingsRow icon="add" title="Add a child" onPress={() => router.push("/parent/link")} />
+      </SettingsGroup>
 
-      <Row
-        title="Notifications"
-        subtitle="Absent and late, in school, and school messages"
-        onPress={() => router.push("/parent/notification-settings")}
-      />
-
-      <View style={styles.group}>
-        <Text style={[styles.heading, { color: palette.text }]}>Appearance</Text>
-        <View accessibilityRole="radiogroup" style={[styles.segments, { borderColor: palette.line, backgroundColor: palette.surface }]}>
-          {(["system", "light", "dark"] as const).map((option) => {
-            const selected = theme === option;
-            return (
-              <Pressable
-                key={option}
-                accessibilityRole="radio"
-                accessibilityState={{ selected }}
-                onPress={() => {
-                  setThemeChoice(option);
-                  void setTheme(option);
-                }}
-                style={[styles.segment, selected ? { backgroundColor: palette.accentSoft } : null]}
-              >
-                <Text style={[styles.segmentText, { color: selected ? palette.accent : palette.muted }]}>
-                  {option === "system" ? "Automatic" : option === "light" ? "Light" : "Dark"}
-                </Text>
-              </Pressable>
-            );
-          })}
+      <SettingsGroup title="Preferences">
+        <SettingsRow
+          icon="notifications-outline"
+          title="Notifications"
+          subtitle="Absent and late, in school, and school messages"
+          onPress={() => router.push("/parent/notification-settings")}
+        />
+        <View>
+          <SettingsRow icon="contrast-outline" title="Appearance" />
+          <ThemeChooser
+            value={theme}
+            onChange={(option) => {
+              setThemeChoice(option);
+              void setTheme(option);
+            }}
+            options={[
+              { value: "system", label: "Automatic" },
+              { value: "light", label: "Light" },
+              { value: "dark", label: "Dark" },
+            ]}
+          />
         </View>
-      </View>
+      </SettingsGroup>
 
-      <View style={styles.group}>
-        <Button label="Privacy policy" variant="secondary" onPress={() => void WebBrowser.openBrowserAsync(`${WEB_URL}/privacy`)} />
-        <Button label="Terms of Use" variant="secondary" onPress={() => void WebBrowser.openBrowserAsync(APPLE_STANDARD_EULA_URL)} />
-        <Button
-          label="Sign out"
-          variant="secondary"
+      <SettingsGroup title="About">
+        <SettingsRow icon="shield-checkmark-outline" title="Privacy policy" external onPress={() => open(`${WEB_URL}/privacy`)} />
+        <SettingsRow icon="document-text-outline" title="Terms of Use" external onPress={() => open(APPLE_STANDARD_EULA_URL)} />
+      </SettingsGroup>
+
+      <SettingsGroup>
+        <SettingsRow
+          icon="log-out-outline"
+          title="Sign out"
           onPress={() => void forgetThisPhonesPush().then(() => supabase.auth.signOut({ scope: "local" }))}
         />
-      </View>
+      </SettingsGroup>
 
-      <View style={styles.group}>
-        {error ? <Message>{error}</Message> : null}
-        <Button label="Delete account" variant="danger" onPress={() => setConfirmDelete(true)} busy={busy} />
-        <Body muted>Deleting your account removes your links to your children. The school keeps your number on its records.</Body>
-      </View>
+      {error ? <Message>{error}</Message> : null}
+      <SettingsGroup footer="Deleting your account removes your links to your children. The school keeps your number on its records.">
+        <SettingsRow icon="trash-outline" title="Delete account" danger busy={busy} onPress={() => setConfirmDelete(true)} />
+      </SettingsGroup>
 
       <ConfirmDialog
         visible={unlink !== null}
@@ -176,11 +182,6 @@ export default function ParentAccountScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 24, gap: 24 },
-  group: { gap: 12 },
-  heading: { fontSize: 15, fontWeight: "600" },
+  content: { padding: 20, gap: 24, paddingBottom: 40 },
   remove: { fontSize: 14, fontWeight: "600" },
-  segments: { flexDirection: "row", borderWidth: 1, borderRadius: 10, padding: 3 },
-  segment: { flex: 1, alignItems: "center", paddingVertical: 10, borderRadius: 8 },
-  segmentText: { fontSize: 14, fontWeight: "600" },
 });

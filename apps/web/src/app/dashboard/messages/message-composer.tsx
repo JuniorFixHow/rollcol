@@ -1,6 +1,6 @@
 "use client";
 
-import { MAX_MESSAGE_SEGMENTS, messageCost } from "@rollcol/shared";
+import { MAX_MESSAGE_SEGMENTS, messageCost, quietNowText } from "@rollcol/shared";
 import { useActionState, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { useConfirm } from "@/components/confirm-dialog";
@@ -33,7 +33,7 @@ export function MessageComposer({
   hidden,
   placeholder,
   sendLabel = "Send",
-  quietNote = null,
+  quiet = null,
 }: {
   action: Action;
   /** Added to the start of every SMS, so it counts towards the length. */
@@ -51,8 +51,8 @@ export function MessageComposer({
   hidden?: Record<string, string>;
   placeholder?: string;
   sendLabel?: string;
-  /** The school's quiet hours in words, or null when it has none. */
-  quietNote?: string | null;
+  /** The school's quiet hours (Ghana time), or null when it has none. */
+  quiet?: { on: boolean; start: string; end: string } | null;
 }) {
   const [rawState, formAction] = useActionState(action, initialFormState);
   const state = useFreshState(rawState);
@@ -107,12 +107,19 @@ export function MessageComposer({
           confirmed.current = false;
           return;
         }
+        // Ask only when it matters: it costs credits, or quiet hours delay it now.
+        const quietNote = quietNowText(quiet);
+        if (credits === 0 && !quietNote) return;
         event.preventDefault();
         const form = event.currentTarget;
         const who = reach === 1 ? "1 guardian" : `${reach} guardians`;
+        const parts = [
+          credits > 0 ? `It uses ${credits} SMS ${credits === 1 ? "credit" : "credits"}.` : "Everyone gets it in the RollCol app, so it uses no credits.",
+          quietNote,
+        ];
         void ask({
           title: `Send this to ${who}?`,
-          message: `It uses ${credits} SMS ${credits === 1 ? "credit" : "credits"}.${quietNote ? ` ${quietNote}` : ""}`,
+          message: parts.filter(Boolean).join(" "),
           confirmLabel: sendLabel,
         }).then((ok) => {
           if (!ok) return;

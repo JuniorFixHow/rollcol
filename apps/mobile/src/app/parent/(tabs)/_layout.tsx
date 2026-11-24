@@ -18,11 +18,15 @@ function HeaderBrand() {
   );
 }
 
-function useUnreadCount(): number {
-  const [count, setCount] = useState(0);
+/** Unread notifications, and unread messages (school messages and alerts), counted apart. */
+function useUnreadCounts(): { notifications: number; messages: number } {
+  const [count, setCount] = useState({ notifications: 0, messages: 0 });
   const load = useCallback(async () => {
-    const { count: unread } = await supabase.from("push_outbox").select("id", { count: "exact", head: true }).is("read_at", null);
-    setCount(unread ?? 0);
+    const [notifications, messages] = await Promise.all([
+      supabase.from("push_outbox").select("id", { count: "exact", head: true }).is("data->smsId", null).is("read_at", null),
+      supabase.from("push_outbox").select("id", { count: "exact", head: true }).not("data->smsId", "is", null).is("read_at", null),
+    ]);
+    setCount({ notifications: notifications.count ?? 0, messages: messages.count ?? 0 });
   }, []);
   useFocusEffect(
     useCallback(() => {
@@ -48,7 +52,8 @@ function tint(color: unknown): string {
 
 export default function ParentTabsLayout() {
   const palette = usePalette();
-  const unread = useUnreadCount();
+  const unread = useUnreadCounts();
+  const badge = (n: number) => (n > 0 ? (n > 99 ? "99+" : n) : undefined);
 
   return (
     <Tabs
@@ -75,6 +80,8 @@ export default function ParentTabsLayout() {
         name="messages"
         options={{
           title: "Messages",
+          tabBarBadge: badge(unread.messages),
+          tabBarBadgeStyle: { backgroundColor: palette.danger, color: "#ffffff" },
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? "chatbubbles" : "chatbubbles-outline"} size={24} color={tint(color)} />
           ),
@@ -84,7 +91,7 @@ export default function ParentTabsLayout() {
         name="notifications"
         options={{
           title: "Notifications",
-          tabBarBadge: unread > 0 ? (unread > 99 ? "99+" : unread) : undefined,
+          tabBarBadge: badge(unread.notifications),
           tabBarBadgeStyle: { backgroundColor: palette.danger, color: "#ffffff" },
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? "notifications" : "notifications-outline"} size={24} color={tint(color)} />

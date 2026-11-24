@@ -22,6 +22,7 @@ export default async function NotificationsPage() {
     supabase
       .from("push_outbox")
       .select("id, title, body, data, created_at, read_at")
+      .is("data->smsId", null) // school messages are listed in Messages
       .order("created_at", { ascending: false })
       .limit(100),
     supabase.from("notification_settings").select("kind, enabled"),

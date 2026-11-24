@@ -1861,8 +1861,16 @@ export type Database = {
         Returns: { linked: number; pending: number; remaining: number }[]
       }
       parent_messages: {
-        Args: { p_before?: number; p_limit?: number }
-        Returns: { id: number; school_name: string; kind: string; body: string; sent_at: string }[]
+        Args: { p_before?: number; p_limit?: number; p_id?: number }
+        Returns: { id: number; school_name: string; kind: string; body: string; sent_at: string; unread: boolean }[]
+      }
+      parent_delete_messages: {
+        Args: { p_ids?: number[] }
+        Returns: number
+      }
+      mark_messages_read: {
+        Args: { p_sms_id?: number }
+        Returns: undefined
       }
       parent_my_links: {
         Args: never

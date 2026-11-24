@@ -5,7 +5,6 @@ import {
   SMS_KIND_LABELS,
   SMS_STATUS_LABELS,
   formatPhoneForDisplay,
-  quietHoursText,
 } from "@rollcol/shared";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -13,31 +12,12 @@ import { notFound } from "next/navigation";
 import { Badge, Card, EmptyState, Notice, PageHeader, Table, Td, formatDateTime } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
 import { sendBroadcast } from "./actions";
+import { DELIVERY_TONE, STATUS_TONE } from "./labels";
 import { type ClassAudience, MessageComposer } from "./message-composer";
 
 export const metadata: Metadata = { title: "Messages" };
 
 type Kind = Enums<"sms_kind">;
-type Status = Enums<"sms_status">;
-type Delivery = Enums<"sms_delivery">;
-
-const DELIVERY_TONE: Record<Delivery, "neutral" | "success" | "danger"> = {
-  pending: "neutral",
-  delivered: "success",
-  failed: "danger",
-  expired: "danger",
-  rejected: "danger",
-};
-
-const STATUS_TONE: Record<Status, "neutral" | "success" | "warning" | "danger" | "accent"> = {
-  queued: "neutral",
-  sending: "accent",
-  sent: "success",
-  failed: "danger",
-  no_credit: "warning",
-  cancelled: "neutral",
-  in_app: "success",
-};
 
 function isKind(value: unknown): value is Kind {
   return typeof value === "string" && (DatabaseConstants.public.Enums.sms_kind as readonly string[]).includes(value);
@@ -72,8 +52,8 @@ export default async function MessagesPage({ searchParams }: PageProps<"/dashboa
     isAdmin && verified ? supabase.rpc("guardians_in_app", { p_school_id: school.id }) : Promise.resolve({ data: [] }),
   ]);
   const smsName = settings?.sms_name ?? school.name;
-  const quietNote = settings
-    ? quietHoursText({ on: settings.sms_quiet_hours, start: settings.sms_quiet_start, end: settings.sms_quiet_end })
+  const quietSettings = settings
+    ? { on: settings.sms_quiet_hours, start: settings.sms_quiet_start, end: settings.sms_quiet_end }
     : null;
   const now = new Date();
 
@@ -131,7 +111,7 @@ export default async function MessagesPage({ searchParams }: PageProps<"/dashboa
                 inApp={inApp ?? []}
                 placeholder="PTA meeting on Saturday at 9am in the school hall."
                 sendLabel="Send broadcast"
-                quietNote={quietNote}
+                quiet={quietSettings}
               />
             )}
           </Card>
@@ -167,7 +147,13 @@ export default async function MessagesPage({ searchParams }: PageProps<"/dashboa
                       {SMS_KIND_LABELS[sms.kind]} · {sms.segments} SMS
                       {sms.credits > 0 ? ` · ${sms.credits} ${sms.credits === 1 ? "credit" : "credits"}` : sms.kind === "system" ? " · free" : ""}
                     </span>
-                    <span className="block whitespace-pre-wrap">{sms.body}</span>
+                    <Link
+                      href={`/dashboard/messages/${sms.id}`}
+                      className="line-clamp-2 block whitespace-pre-wrap hover:text-accent"
+                      title="Open the whole message"
+                    >
+                      {sms.body}
+                    </Link>
                     {sms.error && sms.status !== "sent" ? <span className="block text-xs text-danger">{sms.error}</span> : null}
                   </Td>
                   <Td>

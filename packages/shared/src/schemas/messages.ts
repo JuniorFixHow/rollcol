@@ -97,6 +97,27 @@ export const SMS_DELIVERY_LABELS = {
 } as const;
 
 /** "Messages between 9:00pm and 7:00am wait until 7:00am", or null when the school has no quiet hours. */
+/**
+ * Only during quiet hours (Ghana time, which is UTC): says when the message
+ * will go. Null when there are no quiet hours or they are not on now.
+ */
+export function quietNowText(quiet: { on: boolean; start: string; end: string } | null, now: Date = new Date()): string | null {
+  if (!quiet?.on) return null;
+  const minutes = (value: string) => {
+    const [h = 0, m = 0] = value.slice(0, 5).split(":").map(Number);
+    return h * 60 + m;
+  };
+  const start = minutes(quiet.start);
+  const end = minutes(quiet.end);
+  const current = now.getUTCHours() * 60 + now.getUTCMinutes();
+  const quietNow = start <= end ? current >= start && current < end : current >= start || current < end;
+  if (!quietNow) return null;
+  const h = Math.floor(end / 60);
+  const m = end % 60;
+  const clock = `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, "0")}${h >= 12 ? "pm" : "am"}`;
+  return `It is within your quiet hours, so it waits until ${clock}.`;
+}
+
 export function quietHoursText(quiet: { on: boolean; start: string; end: string } | null): string | null {
   if (!quiet?.on) return null;
   const clock = (value: string) => {

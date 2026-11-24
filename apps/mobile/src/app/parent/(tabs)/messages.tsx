@@ -1,11 +1,14 @@
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { ConfirmDialog } from "@/components/dialog";
 import { Badge, Empty, PullHint, usePullHint } from "@/components/kit";
 import { usePalette } from "@/components/theme";
 import { Message } from "@/components/ui";
 import { formatDayTime } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
+import { refreshUnreadBadge } from "@/lib/unread";
+import { KIND_LABEL } from "@/lib/parent";
 
 interface SchoolMessage {
   id: number;
@@ -13,14 +16,9 @@ interface SchoolMessage {
   kind: string;
   body: string;
   sent_at: string;
+  unread: boolean;
 }
 
-const KIND_LABEL: Record<string, string> = {
-  attendance: "Attendance",
-  broadcast: "Announcement",
-  custom: "Message",
-  system: "Notice",
-};
 
 /** The SMS the schools sent to this number, newest first. */
 export default function MessagesScreen() {
@@ -31,6 +29,8 @@ export default function MessagesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [more, setMore] = useState(true);
   const hint = usePullHint();
+  const [confirmAll, setConfirmAll] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   const load = useCallback(async (before?: number) => {
     const { data, error: loadError } = await supabase.rpc("parent_messages", before ? { p_before: before, p_limit: 50 } : { p_limit: 50 });
@@ -46,9 +46,19 @@ export default function MessagesScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      void load();
+      // Opening Messages clears its unread count; the dots show until the next visit.
+      void load().then(() => supabase.rpc("mark_messages_read", {}).then(() => refreshUnreadBadge()));
     }, [load]),
   );
+
+  async function deleteAll() {
+    setBusy(true);
+    const { error: deleteError } = await supabase.rpc("parent_delete_messages", {});
+    setBusy(false);
+    setConfirmAll(false);
+    if (deleteError) setError("RollCol could not delete your messages. Please try again.");
+    else setItems([]);
+  }
 
   return (
     <FlatList
@@ -75,6 +85,21 @@ export default function MessagesScreen() {
         <View style={styles.header}>
           <PullHint show={hint.show && items.length > 0} />
           {error ? <Message>{error}</Message> : null}
+          {items.length > 0 ? (
+            <Pressable accessibilityRole="button" onPress={() => setConfirmAll(true)} hitSlop={8} style={styles.deleteAll}>
+              <Text style={[styles.deleteAllText, { color: palette.danger }]}>Delete all</Text>
+            </Pressable>
+          ) : null}
+          <ConfirmDialog
+            visible={confirmAll}
+            title="Delete all messages?"
+            message="They are removed from your Messages. The school keeps its own record."
+            confirmLabel="Delete all"
+            danger
+            busy={busy}
+            onCancel={() => setConfirmAll(false)}
+            onConfirm={() => void deleteAll()}
+          />
         </View>
       }
       ListEmptyComponent={
@@ -85,16 +110,28 @@ export default function MessagesScreen() {
         ) : undefined
       }
       renderItem={({ item }) => (
-        <View style={[styles.item, { backgroundColor: palette.surface, borderColor: palette.line }]}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityHint="Opens the whole message"
+          onPress={() => router.push({ pathname: "/parent/message/[id]", params: { id: String(item.id) } })}
+          style={({ pressed }) => [
+            styles.item,
+            { backgroundColor: palette.surface, borderColor: palette.line },
+            pressed ? { opacity: 0.7 } : null,
+          ]}
+        >
           <View style={styles.itemTop}>
+            {item.unread ? <View style={[styles.dot, { backgroundColor: palette.accent }]} accessibilityLabel="New" /> : null}
             <Text style={[styles.school, { color: palette.text }]} numberOfLines={1}>
               {item.school_name}
             </Text>
             <Badge tone={item.kind === "attendance" ? "accent" : "neutral"}>{KIND_LABEL[item.kind] ?? "Message"}</Badge>
           </View>
-          <Text style={[styles.body, { color: palette.text }]}>{item.body}</Text>
+          <Text style={[styles.body, { color: palette.text }]} numberOfLines={3}>
+            {item.body}
+          </Text>
           <Text style={[styles.time, { color: palette.muted }]}>{formatDayTime(item.sent_at)}</Text>
-        </View>
+        </Pressable>
       )}
     />
   );
@@ -108,4 +145,7 @@ const styles = StyleSheet.create({
   school: { flex: 1, fontSize: 14, fontWeight: "700" },
   body: { fontSize: 15, lineHeight: 21 },
   time: { fontSize: 12 },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  deleteAll: { alignSelf: "flex-end" },
+  deleteAllText: { fontSize: 14, fontWeight: "600" },
 });

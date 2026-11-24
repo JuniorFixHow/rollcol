@@ -6,6 +6,10 @@ import { getSession } from "@/lib/auth";
 export const getUnreadCount = cache(async (): Promise<number> => {
   const session = await getSession();
   if (!session) return 0;
-  const { count } = await session.supabase.from("push_outbox").select("id", { count: "exact", head: true }).is("read_at", null);
+  const { count } = await session.supabase
+    .from("push_outbox")
+    .select("id", { count: "exact", head: true })
+    .is("data->smsId", null) // school messages are listed in Messages
+    .is("read_at", null);
   return count ?? 0;
 });

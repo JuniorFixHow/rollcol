@@ -1,4 +1,4 @@
-import { GUARDIAN_CHANNEL_LABELS, SMS_POLICY, formatPhoneForDisplay, quietHoursText } from "@rollcol/shared";
+import { GUARDIAN_CHANNEL_LABELS, SMS_POLICY, formatPhoneForDisplay } from "@rollcol/shared";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -87,8 +87,8 @@ export default async function StudentPage({ params }: PageProps<"/dashboard/stud
       : Promise.resolve(null),
     tertiary ? Promise.resolve({ data: [] }) : supabase.rpc("guardians_not_reached", { p_student_id: student.id }),
   ]);
-  const quietNote = smsSettings
-    ? quietHoursText({ on: smsSettings.sms_quiet_hours, start: smsSettings.sms_quiet_start, end: smsSettings.sms_quiet_end })
+  const quietSettings = smsSettings
+    ? { on: smsSettings.sms_quiet_hours, start: smsSettings.sms_quiet_start, end: smsSettings.sms_quiet_end }
     : null;
   const unreachable = new Set((notReached ?? []).map((row) => row.guardian_id));
   // Admins can see which guardians use the parent app.
@@ -302,7 +302,7 @@ export default async function StudentPage({ params }: PageProps<"/dashboard/stud
                 hidden={{ studentId: student.id }}
                 placeholder={`Please see the class teacher about ${student.full_name.split(" ")[0]} this week.`}
                 sendLabel="Send message"
-                quietNote={quietNote}
+                quiet={quietSettings}
               />
             )}
           </Card>
