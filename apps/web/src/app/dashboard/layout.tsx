@@ -79,6 +79,7 @@ async function Sidebar() {
   const people = [
     { href: "/dashboard/students", label: "Students" },
     ...(isAdmin && !workspace ? [{ href: "/dashboard/staff", label: "Staff" }] : []),
+    ...(isAdmin && !tertiary ? [{ href: "/dashboard/parents", label: "Parent app" }] : []),
   ];
   const academics = [
     tertiary ? { href: "/dashboard/courses", label: "Courses" } : { href: "/dashboard/classes", label: "Classes" },

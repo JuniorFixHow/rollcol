@@ -1079,6 +1079,7 @@ export type Database = {
           sms_quiet_start: string
           daily_register_closes_at: string
           period_register_minutes: number
+          parent_link_approval: boolean
           periods_per_day: number
           school_id: string
           sms_absence_alerts: boolean
@@ -1100,6 +1101,7 @@ export type Database = {
           sms_quiet_start?: string
           daily_register_closes_at?: string
           period_register_minutes?: number
+          parent_link_approval?: boolean
           periods_per_day?: number
           school_id: string
           sms_absence_alerts?: boolean
@@ -1121,6 +1123,7 @@ export type Database = {
           sms_quiet_start?: string
           daily_register_closes_at?: string
           period_register_minutes?: number
+          parent_link_approval?: boolean
           periods_per_day?: number
           school_id?: string
           sms_absence_alerts?: boolean
@@ -1778,6 +1781,74 @@ export type Database = {
         Args: { p_student_id: string }
         Returns: { class_id: string; class_name: string; is_own: boolean }[]
       }
+      approve_parent_link: {
+        Args: { p_link_id: string }
+        Returns: undefined
+      }
+      parent_child_days: {
+        Args: { p_student_id: string; p_from: string; p_to: string }
+        Returns: { day: string; mark: string | null }[]
+      }
+      parent_children: {
+        Args: never
+        Returns: {
+          student_id: string | null
+          full_name: string | null
+          school_id: string
+          school_name: string
+          class_name: string | null
+          period_name: string | null
+          period_starts: string | null
+          period_ends: string | null
+          held: number
+          attended: number
+          late: number
+          absent: number
+          today_mark: string | null
+          today_held: boolean
+        }[]
+      }
+      parent_link_children: {
+        Args: { p_name: string }
+        Returns: { linked: number; pending: number; remaining: number }[]
+      }
+      parent_messages: {
+        Args: { p_before?: number; p_limit?: number }
+        Returns: { id: number; school_name: string; kind: string; body: string; sent_at: string }[]
+      }
+      parent_my_links: {
+        Args: never
+        Returns: { id: string; school_name: string; status: string; children: string[]; created_at: string }[]
+      }
+      parent_status: {
+        Args: never
+        Returns: { phone: string | null; active: number; pending: number; unlinked: number }[]
+      }
+      parent_unlink: {
+        Args: { p_link_id: string }
+        Returns: undefined
+      }
+      remove_parent_link: {
+        Args: { p_link_id: string }
+        Returns: undefined
+      }
+      school_parent_links: {
+        Args: { p_school_id: string }
+        Returns: {
+          id: string
+          status: string
+          guardian_id: string
+          guardian_name: string
+          phone: string
+          children: string[]
+          created_at: string
+          approved_at: string | null
+        }[]
+      }
+      set_parent_link_approval: {
+        Args: { p_school_id: string; p_required: boolean }
+        Returns: undefined
+      }
       approve_workspace_move: {
         Args: { p_move_id: string }
         Returns: undefined
@@ -2285,6 +2356,7 @@ export type Database = {
       }
     }
     Enums: {
+      parent_link_status: "pending" | "active"
       academic_period_kind:
         | "term"
         | "semester"
@@ -2464,6 +2536,7 @@ export const Constants = {
       enrolment_status: ["active", "removed"],
       guardian_event_kind: ["guardian_added", "guardian_removed", "phone_changed", "alerts_on", "alerts_off"],
       member_status: ["pending", "active", "disabled"],
+      parent_link_status: ["pending", "active"],
       record_source: ["rollcol", "stediis"],
       register_mode: ["daily", "per_period"],
       register_status: ["open", "submitted", "closed"],

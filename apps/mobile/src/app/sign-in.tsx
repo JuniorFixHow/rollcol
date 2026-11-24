@@ -4,6 +4,7 @@ import { Link } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { ParentSignIn } from "@/components/parent-sign-in";
 import { usePalette } from "@/components/theme";
 import { Body, Button, Field, LegalLinks, Message, Screen, Title, Logo } from "@/components/ui";
 import { setSignInSchoolCode } from "@/lib/session";
@@ -22,7 +23,7 @@ function lookupEmail(value: unknown): { status: "ok"; email: string } | { status
 
 export default function SignInScreen() {
   const palette = usePalette();
-  const [method, setMethod] = useState<"school" | "email">("school");
+  const [method, setMethod] = useState<"school" | "email" | "parent">("school");
   const [schoolCode, setSchoolCode] = useState("");
   const [schoolId, setSchoolId] = useState("");
   const [email, setEmail] = useState("");
@@ -94,7 +95,7 @@ export default function SignInScreen() {
       <View style={styles.header}>
         <Logo />
         <Title>Sign in to RollCol</Title>
-        <Body muted>For students, teachers and lecturers.</Body>
+        <Body muted>For students, teachers, lecturers and parents.</Body>
       </View>
 
       <View style={[styles.tabs, { backgroundColor: palette.surfaceMuted }]} accessibilityRole="tablist">
@@ -102,13 +103,17 @@ export default function SignInScreen() {
           [
             ["school", "School ID"],
             ["email", "Email"],
+            ["parent", "Parent"],
           ] as const
         ).map(([value, label]) => (
           <Pressable
             key={value}
             accessibilityRole="tab"
             accessibilityState={{ selected: method === value }}
-            onPress={() => setMethod(value)}
+            onPress={() => {
+              setMethod(value);
+              setError(null);
+            }}
             style={[styles.tab, method === value && { backgroundColor: palette.surface }]}
           >
             <Text style={{ color: method === value ? palette.text : palette.muted, fontWeight: "600" }}>{label}</Text>
@@ -116,41 +121,49 @@ export default function SignInScreen() {
         ))}
       </View>
 
-      {method === "school" ? (
-        <>
-          <Field
-            label="School code"
-            hint="Six letters or numbers from your school."
-            value={schoolCode}
-            onChangeText={setSchoolCode}
-            autoCapitalize="characters"
-            autoCorrect={false}
-          />
-          <Field label="School ID" value={schoolId} onChangeText={setSchoolId} autoCapitalize="characters" autoCorrect={false} textContentType="username" />
-        </>
+      {method === "parent" ? (
+        <ParentSignIn />
       ) : (
-        <Field
-          label="Email"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          autoCorrect={false}
-          keyboardType="email-address"
-          textContentType="emailAddress"
-        />
+        <>
+          {method === "school" ? (
+            <>
+              <Field
+                label="School code"
+                hint="Six letters or numbers from your school."
+                value={schoolCode}
+                onChangeText={setSchoolCode}
+                autoCapitalize="characters"
+                autoCorrect={false}
+              />
+              <Field label="School ID" value={schoolId} onChangeText={setSchoolId} autoCapitalize="characters" autoCorrect={false} textContentType="username" />
+            </>
+          ) : (
+            <Field
+              label="Email"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              textContentType="emailAddress"
+            />
+          )}
+          <Field label="Password" value={password} onChangeText={setPassword} secureTextEntry textContentType="password" onSubmitEditing={signIn} />
+
+          {error ? <Message>{error}</Message> : null}
+          <Button label="Sign in" onPress={signIn} busy={busy} />
+          <Button label="Forgot password?" variant="link" onPress={() => void WebBrowser.openBrowserAsync(`${WEB_URL}/forgot-password`)} />
+        </>
       )}
-      <Field label="Password" value={password} onChangeText={setPassword} secureTextEntry textContentType="password" onSubmitEditing={signIn} />
 
-      {error ? <Message>{error}</Message> : null}
-      <Button label="Sign in" onPress={signIn} busy={busy} />
-      <Button label="Forgot password?" variant="link" onPress={() => void WebBrowser.openBrowserAsync(`${WEB_URL}/forgot-password`)} />
-
-      <View style={styles.footer}>
-        <Body muted>New student at a university or college?</Body>
-        <Link href="/sign-up" style={{ color: palette.accent, fontWeight: "600", fontSize: 15 }}>
-          Create your account
-        </Link>
-      </View>
+      {method === "parent" ? null : (
+        <View style={styles.footer}>
+          <Body muted>New student at a university or college?</Body>
+          <Link href="/sign-up" style={{ color: palette.accent, fontWeight: "600", fontSize: 15 }}>
+            Create your account
+          </Link>
+        </View>
+      )}
       <LegalLinks />
     </Screen>
   );

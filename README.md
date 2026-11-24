@@ -153,6 +153,24 @@ on conflict (key) do update set value = excluded.value;
 ```
 Keys: `price_alerts`, `price_complete`, `price_standard`, `price_workspace_alerts`, `price_workspace_standard`, `trial_days`, `complete_credits_per_student`, `sms_packs` (JSON, for example `[{"credits":100,"price":2000}]`), `free_students_non_tertiary`, `free_students_tertiary`, `workspace_free_students`. The Pricing page updates within an hour.
 
+## Parent sign-in codes (Part 9)
+
+Parents sign in to the app with their phone number and a six-digit code. Supabase Auth makes the code; the `send-auth-sms` Edge Function (a Send SMS hook) sends it through the same SMS provider as `send-sms`, and only to numbers a school added as a guardian (at a verified basic or senior high school, or a classes workspace on Alerts).
+
+1. Deploy the hook function:
+   ```
+   pnpm exec supabase functions deploy send-auth-sms --no-verify-jwt
+   ```
+2. Supabase dashboard, **Authentication > Sign In / Providers > Phone**: turn on **Enable phone provider**, keep **Phone confirmation** on, set **SMS OTP expiry** to `600` seconds and **SMS OTP length** to `6`, and save. (The hook replaces the SMS provider chosen there.)
+3. **Authentication > Auth Hooks > Add a new hook > Send SMS hook**: turn it on, choose **HTTPS**, URL `https://YOUR-PROJECT-REF.supabase.co/functions/v1/send-auth-sms`, click **Generate secret**, copy the secret (it starts with `v1,whsec_`), and create the hook.
+4. Give the function the secret:
+   ```
+   pnpm exec supabase secrets set SEND_SMS_HOOK_SECRET="v1,whsec_..."
+   ```
+5. Codes are sent only when `SMS_PROVIDER` is `sailup` or `arkesel`. In test mode, add your number under **Phone > Test Phone Numbers and OTPs** (for example `233241234567=123456`) to sign in with a fixed code and no SMS.
+
+Each code costs one SMS on the provider account. Supabase limits how many are sent (**Authentication > Rate Limits > SMS messages**).
+
 ## Mobile development build (Part 5b)
 
 The app uses native features (location, camera, Face ID, notifications), so it runs in a development build instead of Expo Go. Build once; later changes to screens load without rebuilding.

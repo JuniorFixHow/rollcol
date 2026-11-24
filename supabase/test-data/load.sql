@@ -241,6 +241,16 @@ begin
   select v_shs, 'LSS' || lpad(n::text, 4, '0'), full_name, case when n % 2 = 0 then v_f2s else v_f2a end
   from test_names;
 
+  -- Your phone is also a guardian here, of one child (Kwame Owusu), to try
+  -- linking a second school in the parent app with a different name.
+  if v_has_phone then
+    insert into public.guardians (school_id, full_name, phone) values (v_shs, 'Test Parent', v_phone) returning id into v_guardian;
+    insert into public.guardian_links (school_id, guardian_id, student_id, relationship)
+    select v_shs, v_guardian, st.id, 'Parent' from public.students st where st.school_id = v_shs and st.full_name = 'Kwame Owusu';
+    set constraints all immediate;
+    update public.guardian_events set processed_at = now() where school_id = v_shs and processed_at is null;
+  end if;
+
   -- One week of period registers: periods 1 to 3 each weekday.
   v_n := 0;
   for d in select g::date from generate_series(v_today - 7, v_today - 1, interval '1 day') g

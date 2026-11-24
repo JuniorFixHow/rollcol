@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: "How RollCol collects, uses and protects information about schools, staff, students and guardians.",
 };
 
-const LAST_UPDATED = "20 November 2026";
+const LAST_UPDATED = "24 November 2026";
 
 const SECTIONS = [
   { id: "who", title: "Who we are" },
@@ -111,7 +111,13 @@ export default function PrivacyPage() {
             </li>
             <li>
               <strong>Guardian contacts</strong> that schools add for basic and senior high school students: name, phone
-              number, relationship to the student, and their SMS preferences. Guardians do not have RollCol accounts.
+              number, relationship to the student, and their SMS preferences.
+            </li>
+            <li>
+              <strong>Parent app accounts</strong>, if a guardian chooses to use the RollCol app: their phone number (to
+              sign in with a code sent by SMS), which guardian records and children their account is linked to, and the
+              phone&apos;s notification token. A parent sees only the children on their own guardian record, after typing
+              one of the child&apos;s names, and only the messages the school sent to their number.
             </li>
             <li>
               <strong>Records of changes</strong>, such as who added or removed a guardian, so schools can see what happened

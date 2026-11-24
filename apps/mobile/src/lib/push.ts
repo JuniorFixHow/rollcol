@@ -86,18 +86,21 @@ export async function forgetThisPhonesPush(): Promise<void> {
   }
 }
 
-/** Tapping a notification about a session opens the Today tab; others open Notifications. */
-export function useNotificationTaps(enabled: boolean): void {
+/**
+ * Tapping a notification about a session opens the Today tab; others open
+ * Notifications (the parent screens have their own).
+ */
+export function useNotificationTaps(enabled: boolean, notifications: "/notifications" | "/parent/notifications" = "/notifications"): void {
   useEffect(() => {
     if (!enabled) return;
     const open = (response: Notifications.NotificationResponse | null) => {
       const data = response?.notification.request.content.data;
       if (data && typeof data.sessionId === "string") router.navigate("/");
-      else if (response) router.navigate("/notifications");
+      else if (response) router.navigate(notifications);
     };
     // The tap that opened the app from closed.
     open(Notifications.getLastNotificationResponse());
     const subscription = Notifications.addNotificationResponseReceivedListener(open);
     return () => subscription.remove();
-  }, [enabled]);
+  }, [enabled, notifications]);
 }

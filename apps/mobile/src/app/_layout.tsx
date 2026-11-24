@@ -21,7 +21,7 @@ export default function RootLayout() {
 }
 
 function RootNavigator() {
-  const { loading, session, member } = useSession();
+  const { loading, session, member, isParent } = useSession();
   const palette = usePalette();
   const [themeReady, setThemeReady] = useState(false);
 
@@ -32,8 +32,8 @@ function RootNavigator() {
 
   useEffect(() => {
     // Send register marks saved on the phone while offline.
-    if (session) void initOutbox();
-  }, [session]);
+    if (session && !isParent) void initOutbox();
+  }, [session, isParent]);
 
   const ready = !loading && themeReady;
   useEffect(() => {
@@ -51,10 +51,13 @@ function RootNavigator() {
         <Stack.Screen name="sign-in" />
         <Stack.Screen name="sign-up" />
       </Stack.Protected>
-      <Stack.Protected guard={signedIn && !hasSchool}>
+      <Stack.Protected guard={signedIn && isParent}>
+        <Stack.Screen name="parent" />
+      </Stack.Protected>
+      <Stack.Protected guard={signedIn && !isParent && !hasSchool}>
         <Stack.Screen name="join" />
       </Stack.Protected>
-      <Stack.Protected guard={signedIn && hasSchool}>
+      <Stack.Protected guard={signedIn && !isParent && hasSchool}>
         <Stack.Screen name="(app)" />
       </Stack.Protected>
     </Stack>

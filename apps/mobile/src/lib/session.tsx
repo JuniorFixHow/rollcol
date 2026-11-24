@@ -25,6 +25,8 @@ interface SessionState {
   memberships: Membership[];
   /** Set when finishing a saved school join failed, so the join screen can explain. */
   joinError: string | null;
+  /** Signed in with a phone number: a parent account (no school membership). */
+  isParent: boolean;
   refresh: () => Promise<void>;
   switchSchool: (schoolId: string) => Promise<void>;
 }
@@ -142,7 +144,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   return (
-    <SessionContext value={{ loading, session, member, memberships, joinError, refresh, switchSchool }}>
+    <SessionContext value={{ loading, session, member, memberships, joinError, isParent: isParentSession(session), refresh, switchSchool }}>
       {children}
     </SessionContext>
   );
@@ -160,6 +162,14 @@ export async function setSignInSchoolCode(schoolCode: string | null): Promise<vo
 /** Called on sign-out, so the next person on this phone starts fresh. */
 export async function forgetActiveSchool(): Promise<void> {
   await AsyncStorage.multiRemove([ACTIVE_SCHOOL_KEY, SIGN_IN_SCHOOL_CODE_KEY]);
+}
+
+/**
+ * Parents sign in with their phone number and a code; staff and students use
+ * an email (or a school ID, which stands for an email).
+ */
+export function isParentSession(session: Session | null): boolean {
+  return Boolean(session?.user.phone) && !session?.user.email;
 }
 
 export function useSession(): SessionState {

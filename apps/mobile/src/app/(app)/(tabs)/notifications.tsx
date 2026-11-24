@@ -35,7 +35,7 @@ export default function NotificationsScreen() {
   const [failed, setFailed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
-  const { member } = useSession();
+  const { member, isParent } = useSession();
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
@@ -102,7 +102,9 @@ export default function NotificationsScreen() {
         ListEmptyComponent={
           loaded ? (
             <Empty icon="notifications-outline">
-              {member?.kind === "student"
+              {isParent
+                ? "No notifications. You are told here, for example, when the school confirms your link or changes your number."
+                : member?.kind === "student"
                 ? "No notifications. You are told here when a class opens, is about to close, and whether you were marked present."
                 : "No notifications. You are told here, for example, when someone asks to move a workspace into your school."}
             </Empty>
