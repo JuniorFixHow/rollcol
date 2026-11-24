@@ -25,6 +25,7 @@ export default function ParentLayout() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="link" options={{ title: "Add your child" }} />
       <Stack.Screen name="child/[id]" options={{ title: "Attendance" }} />
+      <Stack.Screen name="notification-settings" options={{ title: "Notifications" }} />
     </Stack>
   );
 }

@@ -28,6 +28,8 @@ export function MessageComposer({
   recipients,
   classes,
   allGuardians,
+  inApp,
+  inAppRecipients,
   hidden,
   placeholder,
   sendLabel = "Send",
@@ -42,6 +44,10 @@ export function MessageComposer({
   classes?: ClassAudience[];
   /** Everyone a broadcast to "All guardians" reaches, including children without a class. */
   allGuardians?: number;
+  /** Guardians who get messages in the RollCol app (no credits). */
+  inApp?: string[];
+  /** For fixed recipients: how many of them get it in the app. */
+  inAppRecipients?: number;
   hidden?: Record<string, string>;
   placeholder?: string;
   sendLabel?: string;
@@ -75,8 +81,16 @@ export function MessageComposer({
     return new Set(groups.flatMap((c) => c.guardianIds)).size;
   }, [recipients, classes, allGuardians, chosen]);
 
+  // Guardians who get it in the RollCol app use no credits (the server counts exactly).
+  const appReach = useMemo(() => {
+    if (recipients !== undefined) return Math.min(inAppRecipients ?? 0, recipients);
+    const app = new Set(inApp ?? []);
+    const groups = chosen.length === 0 ? (classes ?? []) : (classes ?? []).filter((c) => chosen.includes(c.id));
+    return Math.min(new Set(groups.flatMap((c) => c.guardianIds).filter((g) => app.has(g))).size, reach);
+  }, [recipients, inAppRecipients, inApp, classes, chosen, reach]);
+
   const cost = messageCost(schoolName, body);
-  const credits = cost.segments * reach;
+  const credits = cost.segments * (reach - appReach);
   const tooLong = cost.segments > MAX_MESSAGE_SEGMENTS;
   const short = body.trim().length < 5;
   const notEnough = balance !== null && credits > balance;
@@ -170,7 +184,8 @@ export function MessageComposer({
 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-line bg-surface-muted px-3 py-2 text-sm">
         <span>
-          {reach === 1 ? "1 guardian" : `${reach} guardians`} · {credits} {credits === 1 ? "credit" : "credits"}
+          {reach === 1 ? "1 guardian" : `${reach} guardians`}
+          {appReach > 0 ? ` (${appReach} in the app)` : ""} · {credits} {credits === 1 ? "credit" : "credits"}
         </span>
         {balance !== null ? (
           <span className={notEnough ? "text-danger" : "text-muted"}>{balance} credits left</span>

@@ -111,6 +111,24 @@ export async function updateGuardian(guardianId: string, _: FormState, formData:
   return succeeded("Saved.");
 }
 
+const CHANNELS = ["app_first", "sms", "app"] as const;
+type Channel = (typeof CHANNELS)[number];
+
+function isChannel(value: unknown): value is Channel {
+  return typeof value === "string" && (CHANNELS as readonly string[]).includes(value);
+}
+
+/** How the school sends this guardian alerts and messages (they are told). */
+export async function setGuardianChannel(guardianId: string, _: FormState, formData: FormData): Promise<FormState> {
+  const { supabase } = await requireStaff();
+  const channel = formData.get("channel");
+  if (!isChannel(channel)) return failed("Choose how to send alerts.");
+  const { error } = await supabase.rpc("set_guardian_channel", { p_guardian_id: guardianId, p_channel: channel });
+  if (error) return failed(error);
+  refresh();
+  return succeeded("Saved. The guardian has been told.");
+}
+
 export async function setGuardianLinkOption(_: FormState, formData: FormData): Promise<FormState> {
   const { supabase, member } = await requireStaff();
   const linkId = String(formData.get("linkId") ?? "");

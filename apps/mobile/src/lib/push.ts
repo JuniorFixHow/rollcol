@@ -96,6 +96,7 @@ export function useNotificationTaps(enabled: boolean, notifications: "/notificat
     const open = (response: Notifications.NotificationResponse | null) => {
       const data = response?.notification.request.content.data;
       if (data && typeof data.sessionId === "string") router.navigate("/");
+      else if (data && data.smsId !== undefined && notifications === "/parent/notifications") router.navigate("/parent/messages");
       else if (response) router.navigate(notifications);
     };
     // The tap that opened the app from closed.

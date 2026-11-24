@@ -36,6 +36,7 @@ const STATUS_TONE: Record<Status, "neutral" | "success" | "warning" | "danger" |
   failed: "danger",
   no_credit: "warning",
   cancelled: "neutral",
+  in_app: "success",
 };
 
 function isKind(value: unknown): value is Kind {
@@ -63,11 +64,12 @@ export default async function MessagesPage({ searchParams }: PageProps<"/dashboa
     .limit(100);
   if (kind) outboxQuery = outboxQuery.eq("kind", kind);
 
-  const [{ data: outbox }, { data: settings }, balance, audiences] = await Promise.all([
+  const [{ data: outbox }, { data: settings }, balance, audiences, { data: inApp }] = await Promise.all([
     outboxQuery,
     supabase.from("school_settings").select("sms_name, sms_quiet_hours, sms_quiet_start, sms_quiet_end").eq("school_id", school.id).single(),
     isAdmin ? supabase.rpc("sms_credit_balance", { p_school_id: school.id }).then((r) => r.data ?? 0) : Promise.resolve(null),
     isAdmin && verified ? loadAudiences(supabase, school.id) : Promise.resolve({ classes: [], all: 0 }),
+    isAdmin && verified ? supabase.rpc("guardians_in_app", { p_school_id: school.id }) : Promise.resolve({ data: [] }),
   ]);
   const smsName = settings?.sms_name ?? school.name;
   const quietNote = settings
@@ -126,6 +128,7 @@ export default async function MessagesPage({ searchParams }: PageProps<"/dashboa
                 balance={balance}
                 classes={audiences.classes}
                 allGuardians={audiences.all}
+                inApp={inApp ?? []}
                 placeholder="PTA meeting on Saturday at 9am in the school hall."
                 sendLabel="Send broadcast"
                 quietNote={quietNote}

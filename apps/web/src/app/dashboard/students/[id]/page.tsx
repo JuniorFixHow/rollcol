@@ -1,4 +1,4 @@
-import { SMS_POLICY, formatPhoneForDisplay, quietHoursText } from "@rollcol/shared";
+import { GUARDIAN_CHANNEL_LABELS, SMS_POLICY, formatPhoneForDisplay, quietHoursText } from "@rollcol/shared";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -13,6 +13,7 @@ import {
   addGuardian,
   deleteStudent,
   removeGuardianLink,
+  setGuardianChannel,
   setGuardianLinkOption,
   setStudentStatus,
   updateGuardian,
@@ -56,7 +57,7 @@ export default async function StudentPage({ params }: PageProps<"/dashboard/stud
       : supabase
           .from("guardian_links")
           .select(
-            "id, relationship, alerts_enabled, receives_present_alerts, guardian:guardians(id, full_name, phone, broadcasts_enabled, guardian_links(count))",
+            "id, relationship, alerts_enabled, receives_present_alerts, guardian:guardians(id, full_name, phone, broadcasts_enabled, channel, guardian_links(count))",
           )
           .eq("student_id", student.id)
           .order("created_at"),
@@ -90,6 +91,15 @@ export default async function StudentPage({ params }: PageProps<"/dashboard/stud
     ? quietHoursText({ on: smsSettings.sms_quiet_hours, start: smsSettings.sms_quiet_start, end: smsSettings.sms_quiet_end })
     : null;
   const unreachable = new Set((notReached ?? []).map((row) => row.guardian_id));
+  // Admins can see which guardians use the parent app.
+  const guardianIds = (links ?? []).flatMap((link) => (link.guardian ? [link.guardian.id] : []));
+  const { data: appLinks } =
+    isAdmin && guardianIds.length > 0
+      ? await supabase.from("parent_links").select("guardian_id").eq("status", "active").in("guardian_id", guardianIds)
+      : { data: [] };
+  const usesApp = new Set((appLinks ?? []).map((row) => row.guardian_id));
+  const { data: appRouted } = canMessage ? await supabase.rpc("guardians_in_app", { p_school_id: school.id }) : { data: [] };
+  const appRoute = new Set(appRouted ?? []);
   const alertGuardians = (links ?? []).filter((link) => link.alerts_enabled).length;
 
   // The database enforces the same rule; this only decides what to show.
@@ -157,6 +167,8 @@ export default async function StudentPage({ params }: PageProps<"/dashboard/stud
                         <div className="flex flex-wrap gap-2">
                           {unreachable.has(guardian.id) ? <Badge tone="danger">Last SMS not delivered</Badge> : null}
                           {link.alerts_enabled ? <Badge tone="success">Alerts on</Badge> : <Badge tone="warning">Alerts off</Badge>}
+                          {usesApp.has(guardian.id) ? <Badge tone="accent">Uses the app</Badge> : null}
+                          {guardian.channel !== "app_first" ? <Badge>{GUARDIAN_CHANNEL_LABELS[guardian.channel]}</Badge> : null}
                           {link.receives_present_alerts ? <Badge tone="accent">Daily present alerts</Badge> : null}
                           {!guardian.broadcasts_enabled ? <Badge>No broadcasts</Badge> : null}
                           {isAdmin && linkedCount > SMS_POLICY.guardianLinkFlagThreshold ? (
@@ -195,6 +207,36 @@ export default async function StudentPage({ params }: PageProps<"/dashboard/stud
                             confirm={`Remove ${guardian.full_name} as a guardian of ${student.full_name}? They will get an SMS to say so.`}
                           />
                         </div>
+                      ) : null}
+
+                      {canManageGuardians ? (
+                        <details className="text-sm">
+                          <summary className="cursor-pointer text-accent">
+                            How alerts reach them: {GUARDIAN_CHANNEL_LABELS[guardian.channel]}
+                          </summary>
+                          <ActionForm
+                            action={setGuardianChannel.bind(null, guardian.id)}
+                            className="mt-3 grid items-start gap-3 sm:grid-cols-[1fr_auto]"
+                          >
+                            <SelectField
+                              name="channel"
+                              label="Send alerts and messages"
+                              defaultValue={guardian.channel}
+                              hint="App first: in the RollCol app when they use it, by SMS when they do not or the app cannot be reached. The guardian is told when this changes."
+                              options={[
+                                { value: "app_first", label: GUARDIAN_CHANNEL_LABELS.app_first },
+                                { value: "sms", label: GUARDIAN_CHANNEL_LABELS.sms },
+                                { value: "app", label: GUARDIAN_CHANNEL_LABELS.app },
+                              ]}
+                            />
+                            <FieldButton>
+                              <SubmitButton>Save</SubmitButton>
+                            </FieldButton>
+                            <div className="sm:col-span-2">
+                              <FormMessage />
+                            </div>
+                          </ActionForm>
+                        </details>
                       ) : null}
 
                       {canManageGuardians ? (
@@ -256,6 +298,7 @@ export default async function StudentPage({ params }: PageProps<"/dashboard/stud
                 schoolName={smsSettings?.sms_name ?? school.name}
                 balance={balance}
                 recipients={alertGuardians}
+                inAppRecipients={(links ?? []).filter((link) => link.alerts_enabled && link.guardian && appRoute.has(link.guardian.id)).length}
                 hidden={{ studentId: student.id }}
                 placeholder={`Please see the class teacher about ${student.full_name.split(" ")[0]} this week.`}
                 sendLabel="Send message"

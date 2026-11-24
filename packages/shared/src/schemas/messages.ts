@@ -77,6 +77,14 @@ export const SMS_STATUS_LABELS = {
   failed: "Failed",
   no_credit: "No credits",
   cancelled: "Cancelled",
+  in_app: "In the app",
+} as const;
+
+/** How the school sends alerts and messages to a guardian. */
+export const GUARDIAN_CHANNEL_LABELS = {
+  app_first: "App first, SMS if needed",
+  sms: "SMS only",
+  app: "App only",
 } as const;
 
 /** What the phone network reported. Shown instead of "Sent" once a report arrives. */

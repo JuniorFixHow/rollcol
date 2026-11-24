@@ -29,6 +29,8 @@ export default function LinkChildScreen() {
         setError(
           /too many tries/i.test(linkError.message)
             ? "Too many tries. Try again tomorrow, or ask the school to check your child's name."
+            : /already linked/i.test(linkError.message)
+              ? "Your children are already linked at every school that has your number."
             : /network|fetch/i.test(linkError.message)
               ? "We could not reach RollCol. Check your connection and try again."
               : "RollCol could not link your child. Please try again.",

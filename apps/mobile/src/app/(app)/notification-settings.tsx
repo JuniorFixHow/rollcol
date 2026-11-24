@@ -7,9 +7,15 @@ import { type PushPermission, pushPermission, registerForPush, registerStaffPush
 import { useSession } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
 
-type Kind = "sessions" | "reminders" | "moves";
+type Kind = "sessions" | "reminders" | "moves" | "absences" | "arrivals" | "messages";
 
-const KINDS: { kind: Kind; title: string; detail: string; for: "student" | "staff" }[] = [
+const ALL_KINDS: readonly string[] = ["sessions", "reminders", "moves", "absences", "arrivals", "messages"];
+
+function isKind(value: string): value is Kind {
+  return ALL_KINDS.includes(value);
+}
+
+const KINDS: { kind: Kind; title: string; detail: string; for: "student" | "staff" | "parent" }[] = [
   {
     kind: "sessions",
     title: "Classes",
@@ -28,6 +34,24 @@ const KINDS: { kind: Kind; title: string; detail: string; for: "student" | "staf
     detail: "Someone asks to move a workspace into your school, or your own request is approved or declined.",
     for: "staff",
   },
+  {
+    kind: "absences",
+    title: "Absent and late",
+    detail: "Your child is marked absent or late.",
+    for: "parent",
+  },
+  {
+    kind: "arrivals",
+    title: "In school",
+    detail: "Your child is marked present (if the school sends this), or arrives after being marked absent.",
+    for: "parent",
+  },
+  {
+    kind: "messages",
+    title: "School messages",
+    detail: "Announcements and messages from your child's school.",
+    for: "parent",
+  },
 ];
 
 /**
@@ -35,10 +59,17 @@ const KINDS: { kind: Kind; title: string; detail: string; for: "student" | "staf
  * in to the account) are always sent and cannot be turned off.
  */
 export default function NotificationSettingsScreen() {
-  const { member } = useSession();
+  const { member, isParent } = useSession();
   const palette = usePalette();
   const [permission, setPermission] = useState<PushPermission | null>(null);
-  const [enabled, setEnabled] = useState<Record<Kind, boolean>>({ sessions: true, reminders: true, moves: true });
+  const [enabled, setEnabled] = useState<Record<Kind, boolean>>({
+    sessions: true,
+    reminders: true,
+    moves: true,
+    absences: true,
+    arrivals: true,
+    messages: true,
+  });
   const [saving, setSaving] = useState<Kind | null>(null);
   const [error, setError] = useState<string | null>(null);
   const isStudent = member?.kind === "student";
@@ -48,7 +79,7 @@ export default function NotificationSettingsScreen() {
     const { data } = await supabase.from("notification_settings").select("kind, enabled");
     setEnabled((current) => {
       const next = { ...current };
-      for (const row of data ?? []) if (row.kind === "sessions" || row.kind === "reminders" || row.kind === "moves") next[row.kind] = row.enabled;
+      for (const row of data ?? []) if (isKind(row.kind)) next[row.kind] = row.enabled;
       return next;
     });
   }, []);
@@ -82,7 +113,8 @@ export default function NotificationSettingsScreen() {
     }
   }
 
-  const kinds = KINDS.filter((k) => (isStudent ? k.for === "student" : k.for === "staff"));
+  const audience = isParent ? "parent" : isStudent ? "student" : "staff";
+  const kinds = KINDS.filter((k) => k.for === audience);
 
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
@@ -126,8 +158,9 @@ export default function NotificationSettingsScreen() {
       </View>
 
       <Body muted>
-        Security notices, such as your account signing in on a new phone, are always sent. Turned-off notifications still
-        appear in the Notifications tab.
+        {isParent
+          ? "Turned-off notifications are not sent by SMS instead: you still find them in the Messages tab. Notices about your link to the school are always sent."
+          : "Security notices, such as your account signing in on a new phone, are always sent. Turned-off notifications still appear in the Notifications tab."}
       </Body>
     </ScrollView>
   );

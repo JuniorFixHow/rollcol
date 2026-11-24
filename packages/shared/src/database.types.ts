@@ -61,6 +61,39 @@ export type Database = {
         Update: { students_paid?: number }
         Relationships: []
       }
+      parent_links: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          guardian_id: string
+          id: string
+          school_id: string
+          status: Database["public"]["Enums"]["parent_link_status"]
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          guardian_id: string
+          id?: string
+          school_id: string
+          status?: Database["public"]["Enums"]["parent_link_status"]
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          guardian_id?: string
+          id?: string
+          school_id?: string
+          status?: Database["public"]["Enums"]["parent_link_status"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       notification_settings: {
         Row: { user_id: string; kind: string; enabled: boolean; updated_at: string }
         Insert: { user_id: string; kind: string; enabled: boolean; updated_at?: string }
@@ -826,6 +859,7 @@ export type Database = {
       guardians: {
         Row: {
           broadcasts_enabled: boolean
+          channel: Database["public"]["Enums"]["guardian_channel"]
           created_at: string
           created_by: string | null
           full_name: string
@@ -837,6 +871,7 @@ export type Database = {
         }
         Insert: {
           broadcasts_enabled?: boolean
+          channel?: Database["public"]["Enums"]["guardian_channel"]
           created_at?: string
           created_by?: string | null
           full_name: string
@@ -848,6 +883,7 @@ export type Database = {
         }
         Update: {
           broadcasts_enabled?: boolean
+          channel?: Database["public"]["Enums"]["guardian_channel"]
           created_at?: string
           created_by?: string | null
           full_name?: string
@@ -1785,6 +1821,14 @@ export type Database = {
         Args: { p_purchase_id: string }
         Returns: undefined
       }
+      guardians_in_app: {
+        Args: { p_school_id: string }
+        Returns: string[]
+      }
+      set_guardian_channel: {
+        Args: { p_guardian_id: string; p_channel: Database["public"]["Enums"]["guardian_channel"] }
+        Returns: undefined
+      }
       approve_parent_link: {
         Args: { p_link_id: string }
         Returns: undefined
@@ -2361,6 +2405,7 @@ export type Database = {
     }
     Enums: {
       parent_link_status: "pending" | "active"
+      guardian_channel: "app_first" | "sms" | "app"
       academic_period_kind:
         | "term"
         | "semester"
@@ -2418,6 +2463,7 @@ export type Database = {
         | "failed"
         | "no_credit"
         | "cancelled"
+        | "in_app"
       school_type:
         | "tertiary"
         | "non_tertiary"
@@ -2541,6 +2587,7 @@ export const Constants = {
       guardian_event_kind: ["guardian_added", "guardian_removed", "phone_changed", "alerts_on", "alerts_off"],
       member_status: ["pending", "active", "disabled"],
       parent_link_status: ["pending", "active"],
+      guardian_channel: ["app_first", "sms", "app"],
       record_source: ["rollcol", "stediis"],
       register_mode: ["daily", "per_period"],
       register_status: ["open", "submitted", "closed"],
@@ -2548,7 +2595,7 @@ export const Constants = {
       school_type: ["tertiary", "non_tertiary"],
       sms_delivery: ["pending", "delivered", "failed", "expired", "rejected"],
       sms_kind: ["attendance", "system", "broadcast", "custom"],
-      sms_status: ["queued", "sending", "sent", "failed", "no_credit", "cancelled"],
+      sms_status: ["queued", "sending", "sent", "failed", "no_credit", "cancelled", "in_app"],
       staff_role: ["admin", "teacher"],
     },
   },

@@ -95,6 +95,12 @@ export default function ParentAccountScreen() {
         <Button label="Add a child" variant="secondary" onPress={() => router.push("/parent/link")} />
       </View>
 
+      <Row
+        title="Notifications"
+        subtitle="Absent and late, in school, and school messages"
+        onPress={() => router.push("/parent/notification-settings")}
+      />
+
       <View style={styles.group}>
         <Text style={[styles.heading, { color: palette.text }]}>Appearance</Text>
         <View accessibilityRole="radiogroup" style={[styles.segments, { borderColor: palette.line, backgroundColor: palette.surface }]}>
