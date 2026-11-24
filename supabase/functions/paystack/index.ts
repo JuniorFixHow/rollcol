@@ -143,11 +143,22 @@ Deno.serve(async (request: Request) => {
       return json({ error: error?.message ?? "Payment not found." }, 400);
     }
 
+    // Test accounts have made-up emails (such as basic.admin@rollcol.test) that
+    // Paystack refuses. Only with a Paystack TEST key, and only for accounts the
+    // test data created, the payment uses PAYSTACK_TEST_EMAIL instead. A live
+    // key (sk_live_) never takes this path.
+    const testEmail = Deno.env.get("PAYSTACK_TEST_EMAIL")?.trim() ?? "";
+    const isTestAccount = userData.user.app_metadata?.rollcol_test === true;
+    const payerEmail =
+      secretKey.startsWith("sk_test_") && isTestAccount && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(testEmail)
+        ? testEmail
+        : purchase.email;
+
     const response = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
       headers: { Authorization: `Bearer ${secretKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        email: purchase.email,
+        email: payerEmail,
         amount: purchase.amount,
         currency: purchase.currency,
         reference: purchase.reference,

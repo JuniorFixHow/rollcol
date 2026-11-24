@@ -138,11 +138,17 @@ Plans and SMS packs are paid on the website's **Billing** page through Paystack.
    `https://<your-project-ref>.supabase.co/functions/v1/paystack`
    (the project ref is in your Supabase project's URL), and **Test Callback URL** to `https://rollcol.vercel.app/dashboard/billing/return`.
 
+6. Test accounts have made-up emails that Paystack refuses. Give the function a real email to use for them:
+   ```
+   pnpm exec supabase secrets set PAYSTACK_TEST_EMAIL=you@example.com
+   ```
+   It is used only while the key is a test key (`sk_test_`) and only for accounts created by the test data (`rollcol_test` in their app metadata, which users cannot change). Everyone else, and every payment with a live key, uses the admin's own email.
+
 A payment counts only when Paystack confirms it (on return to RollCol, or by the webhook), for the exact amount and currency. Both can arrive; the second changes nothing.
 
 ### Go live
 
-Switch Paystack to **Live mode**, then repeat steps 2, 3 and 5 with the **Live** secret key and live webhook and callback URLs. Do this in launch preparation (Part 11), with the own domain.
+Switch Paystack to **Live mode**, then repeat steps 2, 3 and 5 with the **Live** secret key and live webhook and callback URLs, and remove the test email: `pnpm exec supabase secrets unset PAYSTACK_TEST_EMAIL`. Do this in launch preparation (Part 11), with the own domain.
 
 ### Prices
 
