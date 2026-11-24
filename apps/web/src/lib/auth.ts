@@ -1,4 +1,4 @@
-import { type Member, type Membership, type StaffMembership, chooseMember, toMemberships } from "@rollcol/shared";
+import { type Member, type Membership, type StaffMembership, type StudentMembership, chooseMember, toMemberships } from "@rollcol/shared";
 import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { redirect } from "next/navigation";
@@ -63,9 +63,21 @@ export async function requireStaff() {
   const { member } = session;
   if (session.isParent) redirect("/parent");
   if (member.kind === "none") redirect(member.isPlatformAdmin ? "/platform" : "/onboarding");
-  if (member.kind === "student") redirect("/students-use-the-app");
+  if (member.kind === "student") redirect("/student");
   if (member.status !== "active") redirect("/account/disabled");
   return { ...session, member };
+}
+
+/** A student, on the school chosen with the switcher (a student membership). */
+export async function requireStudent() {
+  const session = await requireUser();
+  if (session.isParent) redirect("/parent");
+  const cookieStore = await cookies();
+  const preferred = cookieStore.get(ACTIVE_SCHOOL_COOKIE)?.value ?? null;
+  const students = session.memberships.filter((m): m is StudentMembership => m.kind === "student");
+  const member = students.find((m) => m.school.id === preferred) ?? students[0];
+  if (!member) redirect(homeFor(session.member));
+  return { ...session, student: member, students };
 }
 
 /** A parent account (signed in with a phone number). Others go to their own home. */
@@ -96,6 +108,6 @@ export function staffMemberships(memberships: readonly Membership[]): StaffMembe
 /** Where a user should land after signing in. */
 export function homeFor(member: Member): string {
   if (member.kind === "none") return member.isPlatformAdmin ? "/platform" : "/onboarding";
-  if (member.kind === "student") return "/students-use-the-app";
+  if (member.kind === "student") return "/student";
   return "/dashboard";
 }

@@ -115,6 +115,13 @@ export const studentSignUpSchema = z.object({
 export type StudentSignUpInput = z.input<typeof studentSignUpSchema>;
 
 /** Stored in the auth user's metadata so joining can finish after email confirmation. */
+/** A student joining another school or a lecturer's workspace. */
+export const studentJoinSchema = z.object({
+  schoolCode: schoolCodeSchema,
+  schoolId: schoolIdSchema,
+  fullName: personNameSchema,
+});
+
 export const pendingStudentJoinSchema = z.object({
   pending_join: z.object({
     school_code: schoolCodeSchema,

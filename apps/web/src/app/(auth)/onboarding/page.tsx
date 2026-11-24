@@ -63,8 +63,21 @@ async function Onboarding() {
   const { data } = await supabase.auth.getUser();
   const metadata: unknown = data.user?.user_metadata;
 
-  // A student confirmed their email on the web; joining finishes in the app.
-  if (pendingStudentJoinSchema.safeParse(metadata).success) redirect("/students-use-the-app");
+  const studentJoin = pendingStudentJoinSchema.safeParse(metadata);
+  if (studentJoin.success) {
+    // A student confirmed their email on the web: finish joining here, as the app does.
+    const join = studentJoin.data.pending_join;
+    if (!memberships.some((m) => m.school.code === join.school_code)) {
+      const { error } = await supabase.rpc("join_school_as_student", {
+        p_school_code: join.school_code,
+        p_school_number: join.school_id,
+        p_full_name: join.full_name,
+      });
+      if (error) redirect("/students-use-the-app");
+    }
+    await supabase.auth.updateUser({ data: { pending_join: null } });
+    redirect("/student");
+  }
   // Signed up for a workspace and confirmed the email.
   if (pendingWorkspaceSchema.safeParse(metadata).success) redirect("/onboarding/workspace");
 

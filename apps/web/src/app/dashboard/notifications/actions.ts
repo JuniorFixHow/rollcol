@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 
-const KINDS = ["moves", "absences", "arrivals", "messages"] as const;
+const KINDS = ["moves", "absences", "arrivals", "messages", "sessions", "reminders"] as const;
 export type StaffNotificationKind = (typeof KINDS)[number];
 
 function isKind(value: unknown): value is StaffNotificationKind {
@@ -16,6 +16,7 @@ export async function markAllRead(): Promise<void> {
   await supabase.rpc("mark_notifications_read", { p_ids: null });
   revalidatePath("/dashboard", "layout");
   revalidatePath("/parent", "layout");
+  revalidatePath("/student", "layout");
 }
 
 /** Removes one notification, or all of them when ids is null. */
@@ -25,6 +26,7 @@ export async function removeNotifications(ids: number[] | null): Promise<{ error
   const { error } = await supabase.rpc("dismiss_notifications", { p_ids: ids });
   revalidatePath("/dashboard", "layout");
   revalidatePath("/parent", "layout");
+  revalidatePath("/student", "layout");
   return { error: error ? "RollCol could not remove this. Please try again." : null };
 }
 

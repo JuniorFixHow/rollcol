@@ -18,6 +18,15 @@ export const STAFF_KINDS: NotificationKindInfo[] = [
   },
 ];
 
+export const STUDENT_KINDS: NotificationKindInfo[] = [
+  {
+    kind: "sessions",
+    title: "Classes",
+    detail: "A class opening or being cancelled, and changes to your check-in (for example marked present by a lecturer).",
+  },
+  { kind: "reminders", title: "Check-in reminders", detail: "5 minutes before check-in closes, if you have not checked in." },
+];
+
 export const PARENT_KINDS: NotificationKindInfo[] = [
   { kind: "absences", title: "Absent and late", detail: "Your child is marked absent or late." },
   {
