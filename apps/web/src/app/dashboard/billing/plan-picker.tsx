@@ -101,13 +101,13 @@ export function PlanPicker({
             {plan === "complete" ? (
               <p className="mt-1 text-muted">Includes {students * creditsPerStudent} SMS credits for broadcasts and messages.</p>
             ) : null}
-            <p className="mt-1 text-muted">Paid once for the whole {word}. Mobile Money or card, through Paystack.</p>
+            <p className="mt-1 text-muted">Paid once for the whole {word}, by Mobile Money or card.</p>
           </>
         )}
       </div>
 
       <FormMessage />
-      <SubmitButton pendingLabel="Opening Paystack...">{total === null ? "Pay with Paystack" : `Pay ${formatCedis(total)} with Paystack`}</SubmitButton>
+      <SubmitButton pendingLabel="Opening the payment page...">{total === null ? "Continue to payment" : `Pay ${formatCedis(total)}`}</SubmitButton>
     </ActionForm>
   );
 }

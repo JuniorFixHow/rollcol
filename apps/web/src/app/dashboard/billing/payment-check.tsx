@@ -21,13 +21,14 @@ export function PaymentCheckNotice({ cameBack }: { cameBack: boolean }) {
       setResult(next);
       setChecking(false);
       if (next.applied > 0) router.replace("/dashboard/billing?paid=1");
+      else if (next.closed > 0 && next.waiting === 0 && !next.problem) router.replace("/dashboard/billing");
     },
     [router],
   );
   const check = useCallback(
     () =>
       checkPendingPayments().then(settle, () =>
-        settle({ applied: 0, waiting: 0, problem: "This page could not reach the server. Check your connection." }),
+        settle({ applied: 0, waiting: 0, closed: 0, problem: "This page could not reach the server. Check your connection." }),
       ),
     [settle],
   );
@@ -46,15 +47,15 @@ export function PaymentCheckNotice({ cameBack }: { cameBack: boolean }) {
   }, [check]);
 
   const problem = result?.problem;
-  const title = problem ? "We could not confirm the payment" : cameBack ? "Waiting for Paystack" : "A payment is not completed";
+  const title = problem ? "We could not confirm the payment" : cameBack ? "Confirming your payment" : "A payment is not completed";
   return (
     <Notice tone={problem ? "warning" : "accent"} title={title}>
       <span className="block">
         {problem
-          ? `${problem} If you paid, nothing is lost: the payment is applied as soon as Paystack confirms it.`
+          ? `${problem} If you paid, nothing is lost: the payment is applied as soon as it is confirmed.`
           : cameBack
-            ? "Paystack has not confirmed the payment yet. Mobile Money can take a minute. This page checks by itself and shows it as paid once it is."
-            : "If you paid and it still shows as not completed, check again. Unfinished payments are never charged."}
+            ? "The payment is not confirmed yet. Mobile Money can take a minute. This page checks by itself and shows it as paid once it is."
+            : "If you paid, check again. If you did not finish paying, cancel it in Payments below, or leave it: it closes by itself after 30 minutes. Unfinished payments are never charged."}
       </span>
       <button
         type="button"

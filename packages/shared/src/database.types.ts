@@ -1781,6 +1781,10 @@ export type Database = {
         Args: { p_student_id: string }
         Returns: { class_id: string; class_name: string; is_own: boolean }[]
       }
+      cancel_purchase: {
+        Args: { p_purchase_id: string }
+        Returns: undefined
+      }
       approve_parent_link: {
         Args: { p_link_id: string }
         Returns: undefined

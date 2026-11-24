@@ -1,26 +1,46 @@
 import { PLAN_INFO, type PlanCode, formatCedis, isPlanCode, periodWord } from "@rollcol/shared";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ActionForm, FormMessage, SubmitButton, TextField } from "@/components/form";
+import { ActionForm, FormMessage, InlineAction, SubmitButton, TextField } from "@/components/form";
 import { Badge, Card, EmptyState, Notice, PageHeader, Table, Td, formatDate, formatDateTime, formatLongDate } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth";
 import { getCatalog } from "@/lib/billing";
-import { startPurchase } from "./actions";
+import { cancelPurchase, startPurchase } from "./actions";
 import { PaymentCheckNotice } from "./payment-check";
 import { PlanPicker } from "./plan-picker";
 
 export const metadata: Metadata = { title: "Billing" };
 
-const STATUS_TONE = { paid: "success", pending: "neutral", failed: "danger" } as const;
+/** How a payment's state reads in the Payments list. */
+function purchaseStatus(
+  status: string,
+  failure: string | null,
+): { label: string; tone: "success" | "neutral" | "warning" | "danger"; detail: string | null } {
+  if (status === "paid") return { label: "Paid", tone: "success", detail: null };
+  if (status === "pending") return { label: "Waiting", tone: "warning", detail: "Not confirmed yet" };
+  if (failure === "Cancelled") return { label: "Cancelled", tone: "neutral", detail: null };
+  if (failure === "Not completed") return { label: "Not completed", tone: "neutral", detail: "Not finished on the payment page" };
+  return { label: "Failed", tone: "danger", detail: failure };
+}
 
 function dates(from: string, to: string) {
   return `${formatDate(from)} to ${formatDate(to)}`;
 }
 
-/** A payment started in the last two days that Paystack has not confirmed yet. */
+/** A payment started in the last two days that is not confirmed yet. */
 function hasRecentPending(purchases: readonly { status: string; created_at: string }[]): boolean {
   const since = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
   return purchases.some((p) => p.status === "pending" && p.created_at >= since);
+}
+
+function PurchaseStatus({ status, failure }: { status: string; failure: string | null }) {
+  const shown = purchaseStatus(status, failure);
+  return (
+    <>
+      <Badge tone={shown.tone}>{shown.label}</Badge>
+      {shown.detail ? <span className="block text-xs text-muted">{shown.detail}</span> : null}
+    </>
+  );
 }
 
 export default async function BillingPage({ searchParams }: PageProps<"/dashboard/billing">) {
@@ -189,7 +209,7 @@ export default async function BillingPage({ searchParams }: PageProps<"/dashboar
                   hint={`${formatCedis(catalog.prices[current])} each, for the rest of ${billing.period_name}.`}
                 />
                 <FormMessage />
-                <SubmitButton variant="secondary" pendingLabel="Opening Paystack...">
+                <SubmitButton variant="secondary" pendingLabel="Opening the payment page...">
                   Pay for more students
                 </SubmitButton>
               </ActionForm>
@@ -204,7 +224,7 @@ export default async function BillingPage({ searchParams }: PageProps<"/dashboar
                     {billing.students_paid} students.
                   </p>
                   <FormMessage />
-                  <SubmitButton variant="secondary" pendingLabel="Opening Paystack...">
+                  <SubmitButton variant="secondary" pendingLabel="Opening the payment page...">
                     Upgrade to Complete
                   </SubmitButton>
                 </ActionForm>
@@ -279,16 +299,21 @@ export default async function BillingPage({ searchParams }: PageProps<"/dashboar
                   </Td>
                   <Td className="whitespace-nowrap tabular-nums">{formatCedis(p.amount)}</Td>
                   <Td>
-                    <Badge tone={STATUS_TONE[p.status === "paid" || p.status === "failed" ? p.status : "pending"]}>
-                      {p.status === "pending" ? "Not completed" : p.status === "paid" ? "Paid" : "Failed"}
-                    </Badge>
-                    {p.failure ? <span className="block text-xs text-muted">{p.failure}</span> : null}
+                    <PurchaseStatus status={p.status} failure={p.failure} />
                   </Td>
                   <Td>
                     {p.receipt_number ? (
                       <Link href={`/dashboard/billing/receipts/${p.id}`} className="text-accent hover:underline">
                         Receipt
                       </Link>
+                    ) : p.status === "pending" ? (
+                      <InlineAction
+                        action={cancelPurchase}
+                        hidden={{ purchaseId: p.id }}
+                        label="Cancel"
+                        variant="secondary"
+                        confirm={`Cancel this payment of ${formatCedis(p.amount)}? Only do this if you did not finish paying. If you did pay, it is still added once the payment is confirmed.`}
+                      />
                     ) : null}
                   </Td>
                 </tr>

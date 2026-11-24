@@ -1,8 +1,9 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
-import { type FormState, failed, formValues } from "@/lib/forms";
+import { type FormState, failed, formValues, succeeded } from "@/lib/forms";
 import { callPaystack } from "@/lib/paystack";
 
 const KINDS = ["plan", "seats", "upgrade", "credits"] as const;
@@ -49,6 +50,8 @@ export interface PaymentCheck {
   applied: number;
   /** Payments Paystack has not finished yet. */
   waiting: number;
+  /** Payments left unfinished, now closed as not completed. */
+  closed: number;
   /** Why a check could not be made, if it could not. */
   problem: string | null;
 }
@@ -69,10 +72,11 @@ export async function checkPendingPayments(): Promise<PaymentCheck> {
     .gte("created_at", since)
     .order("created_at", { ascending: false })
     .limit(5);
-  if (error) return { applied: 0, waiting: 0, problem: error.message };
+  if (error) return { applied: 0, waiting: 0, closed: 0, problem: error.message };
 
   let applied = 0;
   let waiting = 0;
+  let closed = 0;
   let problem: string | null = null;
   for (const { reference } of pending ?? []) {
     const result = await callPaystack(supabase, { action: "verify", reference });
@@ -82,6 +86,16 @@ export async function checkPendingPayments(): Promise<PaymentCheck> {
     }
     if (result.data.status === "paid" || result.data.status === "already_paid") applied += 1;
     else if (result.data.status === "pending") waiting += 1;
+    else closed += 1;
   }
-  return { applied, waiting, problem };
+  return { applied, waiting, closed, problem };
+}
+
+/** Cancels a payment the admin started but did not finish. */
+export async function cancelPurchase(_: FormState, formData: FormData): Promise<FormState> {
+  const { supabase } = await requireAdmin();
+  const { error } = await supabase.rpc("cancel_purchase", { p_purchase_id: String(formData.get("purchaseId") ?? "") });
+  if (error) return failed(error);
+  refresh();
+  return succeeded("Cancelled.");
 }

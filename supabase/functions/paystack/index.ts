@@ -181,7 +181,7 @@ Deno.serve(async (request: Request) => {
     // Only the purchase's own school admins may ask (RLS on billing_purchases).
     const { data: own, error: ownError } = await asUser
       .from("billing_purchases")
-      .select("id")
+      .select("id, created_at")
       .eq("reference", body.reference)
       .maybeSingle();
     if (!own) {
@@ -197,6 +197,14 @@ Deno.serve(async (request: Request) => {
     if (response.status === 401) {
       console.error("paystack: secret key refused by Paystack");
       return json({ error: "Paystack refused the secret key. Check PAYSTACK_SECRET_KEY." }, 502);
+    }
+    // A payment left unfinished for 30 minutes is closed as "Not completed", so it
+    // stops showing as waiting. If Paystack confirms it later, it is still applied.
+    const stale = Date.now() - Date.parse(own.created_at) > 30 * 60 * 1000;
+    const notFound = response.status === 404 || /reference not found/i.test(result.message ?? "");
+    if (stale && (notFound || (isTransaction(result.data) && result.data.status === "abandoned"))) {
+      await admin.rpc("mark_purchase_failed", { p_reference: body.reference, p_reason: "Not completed" });
+      return json({ status: "abandoned" });
     }
     if (!response.ok || !result.status || !isTransaction(result.data)) {
       console.error("paystack: verify not confirmed", body.reference, response.status, result.message);
