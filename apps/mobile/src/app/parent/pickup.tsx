@@ -7,10 +7,15 @@ import { usePalette } from "@/components/theme";
 import { Body, Button, Card, Field, Message } from "@/components/ui";
 import { ghanaDate } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
+import { useChildChoices } from "@/lib/use-children";
 
 /** A pickup code for someone else to collect the child. */
 export default function PickupCodeScreen() {
-  const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
+  const params = useLocalSearchParams<{ id?: string; name?: string }>();
+  const children = useChildChoices();
+  const [chosen, setChosen] = useState<string | null>(params.id ?? null);
+  const id = chosen ?? (children.length === 1 ? (children[0]?.value ?? null) : null);
+  const name = params.name || children.find((c) => c.value === id)?.label;
   const palette = usePalette();
   const first = (name ?? "your child").split(/\s+/)[0] ?? "your child";
   const days = nextDays(ghanaDate(), 8);
@@ -23,6 +28,10 @@ export default function PickupCodeScreen() {
 
   async function make() {
     setError(null);
+    if (!id) {
+      setError("Choose the child.");
+      return;
+    }
     if (collector.trim().length < 2) {
       setError(`Type the name of the person collecting ${first}.`);
       return;
@@ -69,8 +78,10 @@ export default function PickupCodeScreen() {
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Body>
-        If someone else collects {first}, make a code and give it to them. The teacher asks for it before releasing {first}.
+        If someone else collects {id ? first : "your child"}, make a code and give it to them. The teacher asks for it before releasing{" "}
+        {id ? first : "your child"}.
       </Body>
+      {!params.id && children.length > 1 ? <ChoiceChips label="Child" options={children} value={id} onChange={setChosen} /> : null}
       <Field label="Who collects" hint="Their full name, as they will tell the teacher." value={collector} onChangeText={setCollector} autoCapitalize="words" />
       <Field label="Their phone (optional)" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
       <ChoiceChips label="Day" options={days} value={day} onChange={setDay} />

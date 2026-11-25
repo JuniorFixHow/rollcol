@@ -1,38 +1,14 @@
 import { addDays, mondayOf, rangeLabel } from "@rollcol/shared";
 import { Ionicons } from "@expo/vector-icons";
-import { ABSENCE_REASONS, isAbsenceReason } from "@rollcol/shared";
-import { Stack, router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
-import { ConfirmDialog } from "@/components/dialog";
 import { Badge, SectionTitle } from "@/components/kit";
 import { usePalette } from "@/components/theme";
-import { Body, Button, Card, Message } from "@/components/ui";
+import { Body, Card, Message } from "@/components/ui";
 import { formatDay, ghanaDate } from "@/lib/format";
 import { firstName, markLabel } from "@/lib/parent";
 import { supabase } from "@/lib/supabase";
-
-interface Pickup {
-  id: string;
-  code: string;
-  pickup_date: string;
-  collector_name: string;
-  status: string;
-}
-
-interface Absence {
-  id: string;
-  from_date: string;
-  to_date: string;
-  reason: string;
-  note: string | null;
-}
-
-function shortDay(iso: string): string {
-  return new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }).format(
-    new Date(`${iso}T12:00:00Z`),
-  );
-}
 
 interface Day {
   day: string;
@@ -49,45 +25,6 @@ export default function ChildAttendanceScreen() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const friday = addDays(week, 4);
-  const [pickups, setPickups] = useState<Pickup[]>([]);
-  const [absences, setAbsences] = useState<Absence[]>([]);
-  const [cancel, setCancel] = useState<{ kind: "pickup" | "absence"; id: string; title: string } | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  const loadExtras = useCallback(async () => {
-    const [p, a] = await Promise.all([
-      supabase.rpc("parent_pickups", { p_student_id: id }),
-      supabase
-        .from("absence_reports")
-        .select("id, from_date, to_date, reason, note")
-        .eq("student_id", id)
-        .eq("status", "active")
-        .gte("to_date", today)
-        .order("from_date"),
-    ]);
-    setPickups((p.data ?? []).filter((x) => x.status === "active" || x.pickup_date === today));
-    setAbsences(a.data ?? []);
-  }, [id, today]);
-
-  useFocusEffect(
-    useCallback(() => {
-      void loadExtras();
-    }, [loadExtras]),
-  );
-
-  async function confirmCancel() {
-    if (!cancel) return;
-    setBusy(true);
-    const { error: cancelError } =
-      cancel.kind === "pickup"
-        ? await supabase.rpc("parent_cancel_pickup", { p_id: cancel.id })
-        : await supabase.rpc("parent_cancel_absence", { p_id: cancel.id });
-    setBusy(false);
-    setCancel(null);
-    if (cancelError) setError("RollCol could not cancel this. Please try again.");
-    else void loadExtras();
-  }
-
   const load = useCallback(async () => {
     const { data, error: loadError } = await supabase.rpc("parent_child_days", { p_student_id: id, p_from: week, p_to: friday });
     if (loadError) {
@@ -175,68 +112,6 @@ export default function ChildAttendanceScreen() {
       ) : null}
       <Body muted>A day counts as present if your child was present or late in any register that day.</Body>
 
-      <View style={styles.group}>
-        <SectionTitle>Pickup codes</SectionTitle>
-        {pickups.map((p) => (
-          <View key={p.id} style={[styles.dayRow, { backgroundColor: palette.surface, borderColor: palette.line }]}>
-            <View style={styles.flex}>
-              <Text style={[styles.dayText, { color: palette.text }]}>
-                {p.status === "active" ? `${p.code} · ` : ""}
-                {p.collector_name}
-              </Text>
-              <Text style={{ color: palette.muted }}>{shortDay(p.pickup_date)}</Text>
-            </View>
-            {p.status === "active" ? (
-              <Pressable accessibilityRole="button" hitSlop={8} onPress={() => setCancel({ kind: "pickup", id: p.id, title: `Cancel the code for ${p.collector_name}?` })}>
-                <Text style={{ color: palette.danger, fontWeight: "600" }}>Cancel</Text>
-              </Pressable>
-            ) : (
-              <Badge tone={p.status === "used" ? "success" : "neutral"}>{p.status === "used" ? "Collected" : "Cancelled"}</Badge>
-            )}
-          </View>
-        ))}
-        <Button
-          label="Make a pickup code"
-          variant="secondary"
-          onPress={() => router.push({ pathname: "/parent/pickup", params: { id, name: name ?? "" } })}
-        />
-      </View>
-
-      <View style={styles.group}>
-        <SectionTitle>Absences you reported</SectionTitle>
-        {absences.map((a) => (
-          <View key={a.id} style={[styles.dayRow, { backgroundColor: palette.surface, borderColor: palette.line }]}>
-            <View style={styles.flex}>
-              <Text style={[styles.dayText, { color: palette.text }]}>
-                {a.from_date === a.to_date ? shortDay(a.from_date) : `${shortDay(a.from_date)} to ${shortDay(a.to_date)}`}
-              </Text>
-              <Text style={{ color: palette.muted }}>
-                {isAbsenceReason(a.reason) ? ABSENCE_REASONS[a.reason] : a.reason}
-                {a.note ? ` · ${a.note}` : ""}
-              </Text>
-            </View>
-            <Pressable accessibilityRole="button" hitSlop={8} onPress={() => setCancel({ kind: "absence", id: a.id, title: "Cancel this absence report?" })}>
-              <Text style={{ color: palette.danger, fontWeight: "600" }}>Cancel</Text>
-            </Pressable>
-          </View>
-        ))}
-        <Button
-          label="Report an absence"
-          variant="secondary"
-          onPress={() => router.push({ pathname: "/parent/absence", params: { id, name: name ?? "" } })}
-        />
-      </View>
-
-      <ConfirmDialog
-        visible={cancel !== null}
-        title={cancel?.title ?? ""}
-        message={cancel?.kind === "pickup" ? "The code will no longer work." : "The school will expect your child again on these days."}
-        confirmLabel="Cancel it"
-        danger
-        busy={busy}
-        onCancel={() => setCancel(null)}
-        onConfirm={() => void confirmCancel()}
-      />
     </ScrollView>
   );
 }
@@ -251,5 +126,4 @@ const styles = StyleSheet.create({
   thisWeek: { fontSize: 14, fontWeight: "600", textAlign: "center" },
   dayRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12 },
   dayText: { fontSize: 15, fontWeight: "500" },
-  flex: { flex: 1 },
 });

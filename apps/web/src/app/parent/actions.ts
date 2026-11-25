@@ -77,9 +77,11 @@ export async function deleteParentAccount(): Promise<FormState> {
 }
 
 /** A pickup code for someone else to collect the child (today or within a week). */
-export async function createPickup(studentId: string, _: FormState, formData: FormData): Promise<FormState> {
+export async function createPickup(_: FormState, formData: FormData): Promise<FormState> {
   const { supabase } = await requireParent();
   const values = formValues(formData);
+  const studentId = values.studentId ?? "";
+  if (!studentId) return failed("Choose the child.", values);
   const name = (values.collectorName ?? "").trim();
   if (name.length < 2) return failed("Type the name of the person collecting your child.", values);
   const phone = (values.collectorPhone ?? "").trim();
@@ -105,9 +107,11 @@ export async function cancelPickup(_: FormState, formData: FormData): Promise<Fo
 }
 
 /** Tells the school ahead that the child will be absent. */
-export async function reportAbsence(studentId: string, _: FormState, formData: FormData): Promise<FormState> {
+export async function reportAbsence(_: FormState, formData: FormData): Promise<FormState> {
   const { supabase } = await requireParent();
   const values = formValues(formData);
+  const studentId = values.studentId ?? "";
+  if (!studentId) return failed("Choose the child.", values);
   if (!values.from) return failed("Choose the first day.", values);
   if (!isAbsenceReason(values.reason)) return failed("Choose a reason.", values);
   const { error } = await supabase.rpc("parent_report_absence", {

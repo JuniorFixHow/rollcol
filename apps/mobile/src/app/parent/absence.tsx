@@ -6,10 +6,15 @@ import { ChoiceChips, nextDays } from "@/components/choice-chips";
 import { Body, Button, Field, Message } from "@/components/ui";
 import { ghanaDate } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
+import { useChildChoices } from "@/lib/use-children";
 
 /** Tells the school ahead that the child will be absent. */
 export default function ReportAbsenceScreen() {
-  const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
+  const params = useLocalSearchParams<{ id?: string; name?: string }>();
+  const children = useChildChoices();
+  const [chosen, setChosen] = useState<string | null>(params.id ?? null);
+  const id = chosen ?? (children.length === 1 ? (children[0]?.value ?? null) : null);
+  const name = params.name || children.find((c) => c.value === id)?.label;
   const first = (name ?? "your child").split(/\s+/)[0] ?? "your child";
   const days = nextDays(ghanaDate(), 14);
   const [from, setFrom] = useState(days[0]?.value ?? "");
@@ -21,6 +26,10 @@ export default function ReportAbsenceScreen() {
 
   async function send() {
     setError(null);
+    if (!id) {
+      setError("Choose the child.");
+      return;
+    }
     if (!reason) {
       setError("Choose a reason.");
       return;
@@ -40,7 +49,11 @@ export default function ReportAbsenceScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <Body>Tell the school ahead if {first} will be absent. The class teacher is told, and you get no absence alert for those days.</Body>
+      <Body>
+        Tell the school ahead if {id ? first : "your child"} will be absent. The class teacher is told, your child starts as absent on
+        the register, and you get no absence alert for those days.
+      </Body>
+      {!params.id && children.length > 1 ? <ChoiceChips label="Child" options={children} value={id} onChange={setChosen} /> : null}
       <ChoiceChips
         label="From"
         options={days.slice(0, 8)}

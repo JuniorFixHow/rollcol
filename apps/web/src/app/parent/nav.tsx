@@ -17,6 +17,8 @@ export function ParentNav({ unreadNotifications, unreadMessages }: { unreadNotif
   const path = usePathname();
   const links = [
     { href: "/parent", label: "Children", count: 0, active: path === "/parent" || path.startsWith("/parent/child") || path === "/parent/link" },
+    { href: "/parent/pickups", label: "Pickups", count: 0, active: path.startsWith("/parent/pickups") },
+    { href: "/parent/absences", label: "Absences", count: 0, active: path.startsWith("/parent/absences") },
     { href: "/parent/messages", label: "Messages", count: unreadMessages, active: path.startsWith("/parent/messages") },
     { href: "/parent/notifications", label: "Notifications", count: unreadNotifications, active: path.startsWith("/parent/notifications") },
     { href: "/parent/account", label: "Account", count: 0, active: path.startsWith("/parent/account") },

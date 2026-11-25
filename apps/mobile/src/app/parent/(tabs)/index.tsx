@@ -3,6 +3,7 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Badge, Empty, PullHint, SectionTitle, usePullHint } from "@/components/kit";
+import { SettingsGroup, SettingsRow } from "@/components/settings";
 import { usePalette } from "@/components/theme";
 import { Body, Button, Card, Loading, Message } from "@/components/ui";
 import { type ParentChild, markLabel } from "@/lib/parent";
@@ -135,6 +136,23 @@ export default function ChildrenScreen() {
             <ChildCard key={child.student_id ?? `pending-${child.school_id}`} child={child} />
           ))}
         </View>
+      ) : null}
+
+      {children.some((child) => child.student_id) ? (
+        <SettingsGroup title="For the school">
+          <SettingsRow
+            icon="key-outline"
+            title="Pickup codes"
+            subtitle="When someone else collects your child"
+            onPress={() => router.push("/parent/pickups")}
+          />
+          <SettingsRow
+            icon="calendar-outline"
+            title="Absences"
+            subtitle="Tell the school ahead that your child will be absent"
+            onPress={() => router.push("/parent/absences")}
+          />
+        </SettingsGroup>
       ) : null}
 
       {!nothingLinked && status && status.unlinked > 0 ? (
