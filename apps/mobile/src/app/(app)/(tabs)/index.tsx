@@ -284,6 +284,9 @@ function TeacherToday({ member, refreshSession }: { member: SchoolMember; refres
           />
         </Card>
       ) : null}
+      {member.status === "active" ? (
+        <Button label="Check a pickup code" variant="secondary" onPress={() => router.push("/pickup")} />
+      ) : null}
     </ScrollView>
   );
 }

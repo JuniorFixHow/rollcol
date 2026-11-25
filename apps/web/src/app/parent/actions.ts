@@ -1,5 +1,6 @@
 "use server";
 
+import { describeDatabaseError, isAbsenceReason, normalisePhone } from "@rollcol/shared";
 import { refresh, revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireParent } from "@/lib/auth";
@@ -73,4 +74,58 @@ export async function deleteParentAccount(): Promise<FormState> {
   if (error) return failed("We could not delete your account. Please try again.");
   await supabase.auth.signOut({ scope: "local" });
   redirect("/?deleted=1");
+}
+
+/** A pickup code for someone else to collect the child (today or within a week). */
+export async function createPickup(studentId: string, _: FormState, formData: FormData): Promise<FormState> {
+  const { supabase } = await requireParent();
+  const values = formValues(formData);
+  const name = (values.collectorName ?? "").trim();
+  if (name.length < 2) return failed("Type the name of the person collecting your child.", values);
+  const phone = (values.collectorPhone ?? "").trim();
+  const normalised = phone ? normalisePhone(phone) : null;
+  if (phone && !normalised) return failed("Check the collector's phone number, or leave it empty.", values);
+  const { data, error } = await supabase.rpc("parent_create_pickup", {
+    p_student_id: studentId,
+    p_date: values.date || null,
+    p_collector_name: name,
+    p_collector_phone: normalised,
+  });
+  if (error) return failed(describeDatabaseError(error), values);
+  refresh();
+  return succeeded(`Code ${data[0]?.code ?? ""} is ready for ${name}. Give it to them: the teacher asks for it before releasing your child.`);
+}
+
+export async function cancelPickup(_: FormState, formData: FormData): Promise<FormState> {
+  const { supabase } = await requireParent();
+  const { error } = await supabase.rpc("parent_cancel_pickup", { p_id: String(formData.get("id") ?? "") });
+  if (error) return failed(describeDatabaseError(error));
+  refresh();
+  return succeeded("Cancelled.");
+}
+
+/** Tells the school ahead that the child will be absent. */
+export async function reportAbsence(studentId: string, _: FormState, formData: FormData): Promise<FormState> {
+  const { supabase } = await requireParent();
+  const values = formValues(formData);
+  if (!values.from) return failed("Choose the first day.", values);
+  if (!isAbsenceReason(values.reason)) return failed("Choose a reason.", values);
+  const { error } = await supabase.rpc("parent_report_absence", {
+    p_student_id: studentId,
+    p_from: values.from,
+    p_to: values.to || values.from,
+    p_reason: values.reason,
+    p_note: values.note || null,
+  });
+  if (error) return failed(describeDatabaseError(error), values);
+  refresh();
+  return succeeded("Reported. The class teacher has been told.");
+}
+
+export async function cancelAbsence(_: FormState, formData: FormData): Promise<FormState> {
+  const { supabase } = await requireParent();
+  const { error } = await supabase.rpc("parent_cancel_absence", { p_id: String(formData.get("id") ?? "") });
+  if (error) return failed(describeDatabaseError(error));
+  refresh();
+  return succeeded("Cancelled.");
 }

@@ -94,6 +94,48 @@ export type Database = {
         }
         Relationships: []
       }
+      absence_reports: {
+        Row: {
+          cancelled_at: string | null
+          created_at: string
+          from_date: string
+          id: string
+          note: string | null
+          reason: string
+          reported_by: string
+          school_id: string
+          status: string
+          student_id: string
+          to_date: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          created_at?: string
+          from_date: string
+          id?: string
+          note?: string | null
+          reason: string
+          reported_by: string
+          school_id: string
+          status?: string
+          student_id: string
+          to_date: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          created_at?: string
+          from_date?: string
+          id?: string
+          note?: string | null
+          reason?: string
+          reported_by?: string
+          school_id?: string
+          status?: string
+          student_id?: string
+          to_date?: string
+        }
+        Relationships: []
+      }
       notification_settings: {
         Row: { user_id: string; kind: string; enabled: boolean; updated_at: string }
         Insert: { user_id: string; kind: string; enabled: boolean; updated_at?: string }
@@ -1828,6 +1870,81 @@ export type Database = {
       set_guardian_channel: {
         Args: { p_guardian_id: string; p_channel: Database["public"]["Enums"]["guardian_channel"] }
         Returns: undefined
+      }
+      parent_create_pickup: {
+        Args: { p_student_id: string; p_date: string | null; p_collector_name: string; p_collector_phone?: string | null }
+        Returns: { id: string; code: string }[]
+      }
+      parent_cancel_pickup: {
+        Args: { p_id: string }
+        Returns: undefined
+      }
+      parent_pickups: {
+        Args: { p_student_id?: string }
+        Returns: {
+          id: string
+          student_id: string
+          student_name: string
+          code: string
+          pickup_date: string
+          collector_name: string
+          collector_phone: string | null
+          status: string
+          used_at: string | null
+          released_by_name: string | null
+        }[]
+      }
+      check_pickup_code: {
+        Args: { p_school_id: string; p_code: string }
+        Returns: {
+          id: string
+          student_name: string
+          class_name: string | null
+          collector_name: string
+          collector_phone: string | null
+          parent_name: string | null
+          created_at: string
+        }[]
+      }
+      release_pickup: {
+        Args: { p_id: string }
+        Returns: undefined
+      }
+      school_pickups: {
+        Args: { p_school_id: string; p_date?: string }
+        Returns: {
+          id: string
+          student_name: string
+          class_name: string | null
+          collector_name: string
+          status: string
+          used_at: string | null
+          released_by_name: string | null
+          created_at: string
+        }[]
+      }
+      parent_report_absence: {
+        Args: { p_student_id: string; p_from: string; p_to: string; p_reason: string; p_note?: string | null }
+        Returns: string
+      }
+      parent_cancel_absence: {
+        Args: { p_id: string }
+        Returns: undefined
+      }
+      school_absence_reports: {
+        Args: { p_school_id: string }
+        Returns: {
+          id: string
+          student_id: string
+          student_name: string
+          class_name: string | null
+          from_date: string
+          to_date: string
+          reason: string
+          note: string | null
+          status: string
+          created_at: string
+        }[]
       }
       approve_parent_link: {
         Args: { p_link_id: string }

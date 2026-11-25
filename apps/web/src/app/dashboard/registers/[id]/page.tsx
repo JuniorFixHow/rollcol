@@ -1,4 +1,4 @@
-import { type RegisterMarks, isAttendanceMark, marksLabel, periodLabel } from "@rollcol/shared";
+import { ABSENCE_REASONS, type RegisterMarks, isAbsenceReason, isAttendanceMark, marksLabel, periodLabel } from "@rollcol/shared";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -29,7 +29,7 @@ export default async function RegisterPage({ params }: PageProps<"/dashboard/reg
     .maybeSingle();
   if (!register) notFound();
 
-  const [{ data: students }, { data: entries }] = await Promise.all([
+  const [{ data: students }, { data: entries }, { data: reports }] = await Promise.all([
     supabase
       .from("students")
       .select("id, full_name, school_number")
@@ -37,7 +37,20 @@ export default async function RegisterPage({ params }: PageProps<"/dashboard/reg
       .neq("status", "disabled")
       .order("full_name"),
     supabase.from("register_entries").select("student_id, mark").eq("register_id", register.id),
+    // Parents' absence reports covering this day.
+    supabase
+      .from("absence_reports")
+      .select("student_id, reason, note")
+      .eq("status", "active")
+      .lte("from_date", register.register_date)
+      .gte("to_date", register.register_date),
   ]);
+  const reported = new Map(
+    (reports ?? []).map((r) => [
+      r.student_id,
+      `${isAbsenceReason(r.reason) ? ABSENCE_REASONS[r.reason] : r.reason}${r.note ? ` (${r.note})` : ""}`,
+    ]),
+  );
 
   const marks: RegisterMarks = {};
   for (const entry of entries ?? []) {
@@ -90,7 +103,12 @@ export default async function RegisterPage({ params }: PageProps<"/dashboard/reg
           ) : (
             <RegisterSheet
               registerId={register.id}
-              students={(students ?? []).map((s) => ({ id: s.id, name: s.full_name, number: s.school_number }))}
+              students={(students ?? []).map((s) => ({
+                id: s.id,
+                name: s.full_name,
+                number: s.school_number,
+                reported: reported.get(s.id) ?? null,
+              }))}
               initialMarks={marks}
               editable={editable}
               open={register.status === "open"}

@@ -1,8 +1,19 @@
-import { ATTENDANCE_MARKS, ATTENDANCE_MARK_LABELS, type AttendanceMark, type RegisterMarks, marksLabel, periodLabel } from "@rollcol/shared";
+import {
+  ABSENCE_REASONS,
+  ATTENDANCE_MARKS,
+  ATTENDANCE_MARK_LABELS,
+  type AttendanceMark,
+  type RegisterMarks,
+  isAbsenceReason,
+  marksLabel,
+  periodLabel,
+} from "@rollcol/shared";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { ConfirmDialog } from "@/components/dialog";
 import { type Palette, usePalette } from "@/components/theme";
+import { supabase } from "@/lib/supabase";
 import { Body, Button, Message } from "@/components/ui";
 import {
   type LocalRegister,
@@ -38,10 +49,13 @@ export default function RegisterScreen() {
   const sync = useSyncState();
   const [register, setRegister] = useState<LocalRegister | null>(null);
   const [students, setStudents] = useState<RosterStudent[]>([]);
+  // Parents' absence reports for this day (online only; the register works without them).
+  const [reported, setReported] = useState<Record<string, string>>({});
   const [marks, setMarks] = useState<RegisterMarks>({});
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [askSubmit, setAskSubmit] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async () => {
@@ -52,6 +66,19 @@ export default function RegisterScreen() {
       setMarks(sheet.marks);
       setStudents(roster);
       setError(null);
+      void supabase
+        .from("absence_reports")
+        .select("student_id, reason, note")
+        .eq("status", "active")
+        .lte("from_date", sheet.date)
+        .gte("to_date", sheet.date)
+        .then(({ data }) => {
+          const next: Record<string, string> = {};
+          for (const r of data ?? []) {
+            next[r.student_id] = `${isAbsenceReason(r.reason) ? ABSENCE_REASONS[r.reason] : r.reason}${r.note ? ` (${r.note})` : ""}`;
+          }
+          setReported(next);
+        });
     } catch (problem) {
       setError(problem instanceof Error ? problem.message : "Could not load this register.");
     }
@@ -98,25 +125,17 @@ export default function RegisterScreen() {
     return result;
   }, [marks, students]);
 
+  async function doSubmit() {
+    setAskSubmit(false);
+    setSubmitting(true);
+    await submitRegister(id);
+    await load();
+    setSubmitting(false);
+  }
+
   function confirmSubmit() {
-    const doSubmit = async () => {
-      setSubmitting(true);
-      await submitRegister(id);
-      await load();
-      setSubmitting(false);
-    };
-    if (counts.notMarked > 0) {
-      Alert.alert(
-        "Submit with children not marked?",
-        `${counts.notMarked} ${counts.notMarked === 1 ? "child is" : "children are"} not marked. Unmarked children are not treated as absent.`,
-        [
-          { text: "Keep marking", style: "cancel" },
-          { text: "Submit", onPress: () => void doSubmit() },
-        ],
-      );
-    } else {
-      void doSubmit();
-    }
+    if (counts.notMarked > 0) setAskSubmit(true);
+    else void doSubmit();
   }
 
   async function onRefresh() {
@@ -189,6 +208,11 @@ export default function RegisterScreen() {
                   {item.name}
                 </Text>
                 {item.number ? <Text style={[styles.number, { color: palette.muted }]}>{item.number}</Text> : null}
+                {reported[item.id] ? (
+                  <Text numberOfLines={2} style={[styles.number, { color: palette.warning }]}>
+                    Parent reported absent: {reported[item.id]}
+                  </Text>
+                ) : null}
               </View>
               <View style={styles.marks} accessibilityLabel={`Mark ${item.name}`}>
                 {ATTENDANCE_MARKS.map((mark) => {
@@ -226,6 +250,14 @@ export default function RegisterScreen() {
             </View>
           ) : undefined
         }
+      />
+      <ConfirmDialog
+        visible={askSubmit}
+        title="Submit with children not marked?"
+        message={`${counts.notMarked} ${counts.notMarked === 1 ? "child is" : "children are"} not marked. Unmarked children are not treated as absent.`}
+        confirmLabel="Submit"
+        onCancel={() => setAskSubmit(false)}
+        onConfirm={() => void doSubmit()}
       />
     </>
   );

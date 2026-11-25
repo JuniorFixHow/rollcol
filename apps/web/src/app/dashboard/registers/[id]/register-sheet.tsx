@@ -11,6 +11,8 @@ interface SheetStudent {
   id: string;
   name: string;
   number: string | null;
+  /** Set when a parent reported this child absent for the register's day. */
+  reported?: string | null;
 }
 
 type SaveState = { kind: "idle" } | { kind: "saving" } | { kind: "saved" } | { kind: "error"; message: string };
@@ -162,6 +164,7 @@ export function RegisterSheet({
               <div className="min-w-0">
                 <p className="truncate font-medium">{student.name}</p>
                 {student.number ? <p className="font-mono text-xs text-muted">{student.number}</p> : null}
+                {student.reported ? <p className="text-xs font-medium text-warning">Parent reported absent: {student.reported}</p> : null}
               </div>
               <div role="group" aria-label={`Mark ${student.name}`} className="flex gap-1.5">
                 {ATTENDANCE_MARKS.map((mark) => {

@@ -73,6 +73,12 @@ async function Sidebar() {
       : workspace && !workspaceSms
         ? []
         : [{ href: "/dashboard/messages", label: "Messages" }]),
+    ...(tertiary
+      ? []
+      : [
+          { href: "/dashboard/absences", label: "Absence reports" },
+          { href: "/dashboard/pickups", label: "Pickups" },
+        ]),
     { href: "/dashboard/reports", label: "Reports" },
     ...(tertiary && isAdmin ? [{ href: "/dashboard/phones", label: "Phones" }] : []),
   ];

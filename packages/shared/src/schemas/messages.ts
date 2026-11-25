@@ -127,3 +127,17 @@ export function quietHoursText(quiet: { on: boolean; start: string; end: string 
   };
   return `Messages between ${clock(quiet.start)} and ${clock(quiet.end)} wait until ${clock(quiet.end)}.`;
 }
+
+/** Why a parent says their child will be absent. */
+export const ABSENCE_REASONS = {
+  sick: "Sick",
+  family: "Family matter",
+  travel: "Travelling",
+  other: "Other",
+} as const;
+
+export type AbsenceReason = keyof typeof ABSENCE_REASONS;
+
+export function isAbsenceReason(value: unknown): value is AbsenceReason {
+  return typeof value === "string" && Object.hasOwn(ABSENCE_REASONS, value);
+}

@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Badge, Card, Notice, PageHeader } from "@/components/ui";
 import { requireParent } from "@/lib/auth";
 import { ghanaToday, markLabel } from "@/lib/parent";
+import { ChildExtras } from "./extras";
 
 export const metadata: Metadata = { title: "Attendance" };
 
@@ -104,6 +105,8 @@ export default async function ChildPage({
           <p>{held === 0 ? "No registers this week." : `Attendance ${attended} out of ${held}`}</p>
           <p className="mt-2 text-sm text-muted">A day counts as present if your child was present or late in any register that day.</p>
         </Card>
+
+        <ChildExtras studentId={id} firstName={child.full_name.split(/\s+/)[0] ?? child.full_name} />
       </div>
     </>
   );
