@@ -15,3 +15,4 @@ export { Constants as DatabaseConstants } from "./database.types";
 export type { ZodError } from "zod";
 export * from "./report-view";
 export * from "./billing";
+export * from "./school-day";

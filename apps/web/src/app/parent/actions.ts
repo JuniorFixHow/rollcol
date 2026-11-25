@@ -106,24 +106,48 @@ export async function cancelPickup(_: FormState, formData: FormData): Promise<Fo
   return succeeded("Cancelled.");
 }
 
-/** Tells the school ahead that the child will be absent. */
+/** Tells the school ahead that one or more children will be absent (ticked as child:<id>). */
 export async function reportAbsence(_: FormState, formData: FormData): Promise<FormState> {
   const { supabase } = await requireParent();
   const values = formValues(formData);
-  const studentId = values.studentId ?? "";
-  if (!studentId) return failed("Choose the child.", values);
+  const studentIds = Object.keys(values)
+    .filter((key) => key.startsWith("child:") && values[key] === "on")
+    .map((key) => key.slice("child:".length));
+  if (studentIds.length === 0) return failed("Tick at least one child.", values);
   if (!values.from) return failed("Choose the first day.", values);
   if (!isAbsenceReason(values.reason)) return failed("Choose a reason.", values);
-  const { error } = await supabase.rpc("parent_report_absence", {
-    p_student_id: studentId,
+  const { error } = await supabase.rpc("parent_report_absences", {
+    p_student_ids: studentIds,
     p_from: values.from,
-    p_to: values.to || values.from,
+    p_to: values.to && values.to >= values.from ? values.to : values.from,
     p_reason: values.reason,
     p_note: values.note || null,
   });
   if (error) return failed(describeDatabaseError(error), values);
   refresh();
-  return succeeded("Reported. The class teacher has been told.");
+  return succeeded(
+    studentIds.length === 1 ? "Reported. The class teacher has been told." : `Reported for ${studentIds.length} children. Their class teachers have been told.`,
+  );
+}
+
+/** Asks the school to use a new number for this guardian record. */
+export async function requestNumberChange(_: FormState, formData: FormData): Promise<FormState> {
+  const { supabase } = await requireParent();
+  const values = formValues(formData);
+  const phone = normalisePhone(values.phone ?? "");
+  if (!phone) return failed("Enter the new number, for example 024 123 4567.", values);
+  const { error } = await supabase.rpc("parent_request_phone_change", { p_link_id: values.linkId ?? "", p_new_phone: phone });
+  if (error) return failed(describeDatabaseError(error), values);
+  refresh();
+  return succeeded("Sent. The school will check it; you are told when it is approved.");
+}
+
+export async function cancelNumberChange(_: FormState, formData: FormData): Promise<FormState> {
+  const { supabase } = await requireParent();
+  const { error } = await supabase.rpc("parent_cancel_phone_change", { p_id: String(formData.get("id") ?? "") });
+  if (error) return failed(describeDatabaseError(error));
+  refresh();
+  return succeeded("Cancelled.");
 }
 
 export async function cancelAbsence(_: FormState, formData: FormData): Promise<FormState> {

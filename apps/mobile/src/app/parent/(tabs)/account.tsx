@@ -104,6 +104,12 @@ export default function ParentAccountScreen() {
           />
         ))}
         <SettingsRow icon="add" title="Add a child" onPress={() => router.push("/parent/link")} />
+        <SettingsRow
+          icon="call-outline"
+          title="Change my number"
+          subtitle="Ask your children's schools to use a new number"
+          onPress={() => router.push("/parent/number")}
+        />
       </SettingsGroup>
 
       <SettingsGroup title="Preferences">

@@ -1,6 +1,6 @@
 import { ABSENCE_REASONS, isAbsenceReason } from "@rollcol/shared";
 import type { Metadata } from "next";
-import { ActionForm, FormMessage, InlineAction, SelectField, SubmitButton, TextField } from "@/components/form";
+import { ActionForm, CheckboxField, FormMessage, InlineAction, SelectField, SubmitButton, TextField } from "@/components/form";
 import { Card, EmptyState, PageHeader, formatLongDate } from "@/components/ui";
 import { requireParent } from "@/lib/auth";
 import { ghanaToday } from "@/lib/parent";
@@ -29,7 +29,7 @@ export default async function AbsencesPage() {
     <>
       <PageHeader
         title="Absences"
-        description="Tell the school ahead if your child will be absent. The class teacher is told, your child starts as absent on the register, and you get no absence alert for those days."
+        description="Tell the school ahead if your children will be absent; tick several for the same days, for example when travelling. The class teacher is told, your child starts as absent on the register, and you get no absence alert for those days."
       />
       <div className="space-y-6">
         <Card title="Report an absence">
@@ -37,7 +37,14 @@ export default async function AbsencesPage() {
             <p className="text-sm text-muted">Add your child first, on the Children page.</p>
           ) : (
             <ActionForm action={reportAbsence} className="grid items-start gap-4 sm:grid-cols-2" resetOnSuccess>
-              <SelectField name="studentId" label="Child" options={kids} defaultValue={kids.length === 1 ? kids[0]?.value : undefined} placeholder="Choose a child" />
+              <fieldset className="space-y-2 sm:col-span-2">
+                <legend className="text-sm font-medium">Children</legend>
+                <div className="flex flex-wrap gap-x-6 gap-y-2">
+                  {kids.map((k) => (
+                    <CheckboxField key={k.value} name={`child:${k.value}`} label={k.label} defaultChecked={kids.length === 1} />
+                  ))}
+                </div>
+              </fieldset>
               <SelectField
                 name="reason"
                 label="Reason"

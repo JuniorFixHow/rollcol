@@ -1,19 +1,20 @@
 import { formatPhoneForDisplay } from "@rollcol/shared";
 import type { Metadata } from "next";
 import { NotificationSettings, PARENT_KINDS } from "@/app/dashboard/notifications/notification-settings";
-import { InlineAction } from "@/components/form";
+import { ActionForm, FormMessage, InlineAction, SubmitButton, TextField } from "@/components/form";
 import { ThemePicker } from "@/components/theme";
 import { Badge, Card, LinkButton, PageHeader, buttonClass } from "@/components/ui";
 import { requireParent } from "@/lib/auth";
-import { deleteParentAccount, unlinkSchool } from "../actions";
+import { cancelNumberChange, deleteParentAccount, requestNumberChange, unlinkSchool } from "../actions";
 
 export const metadata: Metadata = { title: "Account" };
 
 export default async function ParentAccountPage() {
   const { supabase, phone } = await requireParent();
-  const [{ data: links }, { data: settings }] = await Promise.all([
+  const [{ data: links }, { data: settings }, { data: requests }] = await Promise.all([
     supabase.rpc("parent_my_links"),
     supabase.from("notification_settings").select("kind, enabled"),
+    supabase.from("guardian_phone_requests").select("id, school_id, new_phone").eq("status", "pending"),
   ]);
   const enabled = Object.fromEntries((settings ?? []).map((s) => [s.kind, s.enabled]));
 
@@ -52,6 +53,45 @@ export default async function ParentAccountPage() {
           <LinkButton href="/parent/link" variant="secondary" className="mt-4">
             Add a child
           </LinkButton>
+        </Card>
+
+        <Card
+          title="Your phone number"
+          description="Got a new number? Ask each school to use it. Once a school approves, it uses the new number for messages, and you sign in to RollCol with it."
+        >
+          <ul className="divide-y divide-line rounded-lg border border-line">
+            {(links ?? [])
+              .filter((link) => link.status === "active")
+              .map((link) => {
+                const pending = (requests ?? []).find((r) => r.school_id === link.school_id);
+                return (
+                  <li key={link.id} className="space-y-3 px-4 py-3">
+                    <p className="font-medium">{link.school_name}</p>
+                    {pending ? (
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <p className="text-sm">
+                          <Badge tone="warning">Waiting</Badge> You asked to use {formatPhoneForDisplay(pending.new_phone)}.
+                        </p>
+                        <InlineAction action={cancelNumberChange} hidden={{ id: pending.id }} label="Cancel" variant="secondary" />
+                      </div>
+                    ) : (
+                      <ActionForm action={requestNumberChange} className="flex flex-wrap items-end gap-3" resetOnSuccess>
+                        <input type="hidden" name="linkId" value={link.id} />
+                        <div className="w-56">
+                          <TextField name="phone" label="New number" type="tel" inputMode="tel" autoComplete="tel" />
+                        </div>
+                        <SubmitButton variant="secondary" pendingLabel="Sending...">
+                          Ask the school
+                        </SubmitButton>
+                        <div className="w-full">
+                          <FormMessage />
+                        </div>
+                      </ActionForm>
+                    )}
+                  </li>
+                );
+              })}
+          </ul>
         </Card>
 
         <Card title="Notifications" description="Choose what is sent to your phone when you use the RollCol app. The same settings are in the app.">

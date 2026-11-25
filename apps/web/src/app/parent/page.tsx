@@ -1,14 +1,14 @@
-import { attendanceRate, type Database } from "@rollcol/shared";
+import { attendanceRate, type Database, schoolDayText } from "@rollcol/shared";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge, Card, EmptyState, LinkButton, Notice, PageHeader } from "@/components/ui";
 import { requireParent } from "@/lib/auth";
-import { markLabel } from "@/lib/parent";
+import { ghanaToday, markLabel } from "@/lib/parent";
 
 export const metadata: Metadata = { title: "Your children" };
 
 type Child = Database["public"]["Functions"]["parent_children"]["Returns"][number];
-function ChildCard({ child }: { child: Child }) {
+function ChildCard({ child, todayTimes }: { child: Child; todayTimes: string | null }) {
   if (!child.student_id || !child.full_name) {
     return (
       <Card title={child.school_name}>
@@ -30,6 +30,7 @@ function ChildCard({ child }: { child: Child }) {
             {child.class_name ? `${child.class_name} · ` : ""}
             {child.school_name}
           </p>
+          {todayTimes ? <p className="mt-1 text-sm">Today: {todayTimes}</p> : null}
         </div>
         <div className="shrink-0 text-right">
           <p className="text-xs font-medium text-muted">Today</p>
@@ -65,6 +66,20 @@ export default async function ChildrenPage() {
   }
   const status = statusResult.data[0] ?? { active: 0, pending: 0, unlinked: 0 };
   const children = childrenResult.data;
+  const today = ghanaToday();
+  const todayTimes = new Map(
+    await Promise.all(
+      children.flatMap((c) =>
+        c.student_id
+          ? [
+              supabase
+                .rpc("parent_school_days", { p_student_id: c.student_id, p_from: today, p_to: today })
+                .then(({ data }) => [c.student_id ?? "", data?.[0] ? schoolDayText(data[0]) : null] as const),
+            ]
+          : [],
+      ),
+    ),
+  );
   const nothingLinked = status.active === 0 && status.pending === 0;
 
   return (
@@ -90,7 +105,11 @@ export default async function ChildrenPage() {
         {children.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-2">
             {children.map((child) => (
-              <ChildCard key={child.student_id ?? `pending-${child.school_id}`} child={child} />
+              <ChildCard
+                key={child.student_id ?? `pending-${child.school_id}`}
+                child={child}
+                todayTimes={child.student_id ? (todayTimes.get(child.student_id) ?? null) : null}
+              />
             ))}
           </div>
         ) : null}

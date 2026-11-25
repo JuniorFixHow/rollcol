@@ -2,7 +2,7 @@ import { ABSENCE_REASONS, type AbsenceReason, describeDatabaseError } from "@rol
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { ScrollView, StyleSheet } from "react-native";
-import { ChoiceChips, nextDays } from "@/components/choice-chips";
+import { ChoiceChips, MultiChoiceChips, nextDays } from "@/components/choice-chips";
 import { Body, Button, Field, Message } from "@/components/ui";
 import { ghanaDate } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
@@ -12,8 +12,9 @@ import { useChildChoices } from "@/lib/use-children";
 export default function ReportAbsenceScreen() {
   const params = useLocalSearchParams<{ id?: string; name?: string }>();
   const children = useChildChoices();
-  const [chosen, setChosen] = useState<string | null>(params.id ?? null);
-  const id = chosen ?? (children.length === 1 ? (children[0]?.value ?? null) : null);
+  const [chosen, setChosen] = useState<string[]>(params.id ? [params.id] : []);
+  const ids = chosen.length > 0 ? chosen : children.length === 1 && children[0] ? [children[0].value] : [];
+  const id = ids.length === 1 ? ids[0] : null;
   const name = params.name || children.find((c) => c.value === id)?.label;
   const first = (name ?? "your child").split(/\s+/)[0] ?? "your child";
   const days = nextDays(ghanaDate(), 14);
@@ -26,8 +27,8 @@ export default function ReportAbsenceScreen() {
 
   async function send() {
     setError(null);
-    if (!id) {
-      setError("Choose the child.");
+    if (ids.length === 0) {
+      setError("Choose at least one child.");
       return;
     }
     if (!reason) {
@@ -35,8 +36,8 @@ export default function ReportAbsenceScreen() {
       return;
     }
     setBusy(true);
-    const { error: sendError } = await supabase.rpc("parent_report_absence", {
-      p_student_id: id,
+    const { error: sendError } = await supabase.rpc("parent_report_absences", {
+      p_student_ids: ids,
       p_from: from,
       p_to: to < from ? from : to,
       p_reason: reason,
@@ -50,10 +51,12 @@ export default function ReportAbsenceScreen() {
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Body>
-        Tell the school ahead if {id ? first : "your child"} will be absent. The class teacher is told, your child starts as absent on
+        Tell the school ahead if {id ? first : "your children"} will be absent. The class teacher is told, your child starts as absent on
         the register, and you get no absence alert for those days.
       </Body>
-      {!params.id && children.length > 1 ? <ChoiceChips label="Child" options={children} value={id} onChange={setChosen} /> : null}
+      {!params.id && children.length > 1 ? (
+        <MultiChoiceChips label="Children (tick all who will be absent)" options={children} values={chosen} onChange={setChosen} />
+      ) : null}
       <ChoiceChips
         label="From"
         options={days.slice(0, 8)}

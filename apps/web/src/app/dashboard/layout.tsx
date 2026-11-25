@@ -78,6 +78,7 @@ async function Sidebar() {
       : [
           { href: "/dashboard/absences", label: "Absence reports" },
           { href: "/dashboard/pickups", label: "Pickups" },
+          ...(isAdmin ? [{ href: "/dashboard/school-day", label: "School day" }] : []),
         ]),
     { href: "/dashboard/reports", label: "Reports" },
     ...(tertiary && isAdmin ? [{ href: "/dashboard/phones", label: "Phones" }] : []),

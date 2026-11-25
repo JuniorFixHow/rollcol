@@ -1,4 +1,4 @@
-import { addDays, mondayOf, rangeLabel } from "@rollcol/shared";
+import { addDays, mondayOf, rangeLabel, schoolDayText } from "@rollcol/shared";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -32,10 +32,12 @@ export default async function ChildPage({
   const week = weekParam && DATE.test(weekParam) && weekParam <= thisWeek ? mondayOf(weekParam) : thisWeek;
   const friday = addDays(week, 4);
 
-  const [{ data: children }, { data: days, error }] = await Promise.all([
+  const [{ data: children }, { data: days, error }, { data: times }] = await Promise.all([
     supabase.rpc("parent_children"),
     supabase.rpc("parent_child_days", { p_student_id: id, p_from: week, p_to: friday }),
+    supabase.rpc("parent_school_days", { p_student_id: id, p_from: week, p_to: friday }),
   ]);
+  const timesByDay = new Map((times ?? []).map((t) => [t.day, t]));
   const child = (children ?? []).find((c) => c.student_id === id);
   if (!child || !child.full_name) notFound();
 
@@ -87,12 +89,21 @@ export default async function ChildPage({
         <ul className="divide-y divide-line rounded-lg border border-line bg-surface">
           {[0, 1, 2, 3, 4].map((offset) => {
             const day = addDays(week, offset);
+            const time = timesByDay.get(day);
             const label = day > today ? { label: "Coming up", tone: "neutral" as const } : markLabel(byDay.get(day) ?? null, byDay.has(day));
             return (
-              <li key={day} className="flex items-center justify-between px-4 py-3">
-                <span className="font-medium">
-                  {dayName(day)}
-                  {day === today ? <span className="text-muted"> (today)</span> : null}
+              <li key={day} className="flex items-center justify-between gap-3 px-4 py-3">
+                <span className="min-w-0">
+                  <span className="block font-medium">
+                    {dayName(day)}
+                    {day === today ? <span className="text-muted"> (today)</span> : null}
+                  </span>
+                  {time ? (
+                    <span className={`block text-sm ${time.changed ? "font-medium text-warning" : "text-muted"}`}>
+                      {time.changed && !time.closed ? "Changed: " : ""}
+                      {schoolDayText(time)}
+                    </span>
+                  ) : null}
                 </span>
                 <Badge tone={label.tone}>{label.label}</Badge>
               </li>

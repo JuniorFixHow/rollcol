@@ -40,6 +40,48 @@ export function ChoiceChips<T extends string>({
   );
 }
 
+/** A labelled row of choices where several can be picked. */
+export function MultiChoiceChips({
+  label,
+  options,
+  values,
+  onChange,
+}: {
+  label: string;
+  options: { value: string; label: string }[];
+  values: string[];
+  onChange: (values: string[]) => void;
+}) {
+  const palette = usePalette();
+  return (
+    <View style={styles.group}>
+      <Text style={[styles.label, { color: palette.text }]}>{label}</Text>
+      <View accessibilityLabel={label} style={styles.chips}>
+        {options.map((option) => {
+          const selected = values.includes(option.value);
+          return (
+            <Pressable
+              key={option.value}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: selected }}
+              onPress={() => onChange(selected ? values.filter((v) => v !== option.value) : [...values, option.value])}
+              style={[
+                styles.chip,
+                { borderColor: selected ? palette.accent : palette.line, backgroundColor: selected ? palette.accentSoft : palette.surface },
+              ]}
+            >
+              <Text style={[styles.chipText, { color: selected ? palette.accent : palette.text }]}>
+                {selected ? "✓ " : ""}
+                {option.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 /** The next days from today (Ghana time, which is UTC), as YYYY-MM-DD with short labels. */
 export function nextDays(today: string, count: number): { value: string; label: string }[] {
   return Array.from({ length: count }, (_, i) => {

@@ -32,3 +32,13 @@ export async function setLinkApproval(_: FormState, formData: FormData): Promise
   refresh();
   return succeeded(required ? "New links now wait for an admin." : "New links work straight away.");
 }
+
+/** Approving changes the guardian's number (both numbers are told by SMS; the app link ends). */
+export async function decideNumberChange(_: FormState, formData: FormData): Promise<FormState> {
+  const { supabase } = await requireAdmin();
+  const approve = formData.get("approve") === "true";
+  const { error } = await supabase.rpc("decide_phone_request", { p_id: String(formData.get("id") ?? ""), p_approve: approve });
+  if (error) return failed(error);
+  refresh();
+  return succeeded(approve ? "Approved. The guardian's number is changed." : "Declined. The parent has been told.");
+}

@@ -1,4 +1,4 @@
-import { addDays, mondayOf, rangeLabel } from "@rollcol/shared";
+import { addDays, mondayOf, rangeLabel, schoolDayText } from "@rollcol/shared";
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -22,6 +22,7 @@ export default function ChildAttendanceScreen() {
   const today = ghanaDate();
   const [week, setWeek] = useState(() => mondayOf(today));
   const [days, setDays] = useState<Day[] | null>(null);
+  const [times, setTimes] = useState<Record<string, { text: string; changed: boolean }>>({});
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const friday = addDays(week, 4);
@@ -33,6 +34,8 @@ export default function ChildAttendanceScreen() {
     }
     setError(null);
     setDays(data);
+    const { data: dayTimes } = await supabase.rpc("parent_school_days", { p_student_id: id, p_from: week, p_to: friday });
+    setTimes(Object.fromEntries((dayTimes ?? []).map((t) => [t.day, { text: schoolDayText(t), changed: t.changed }])));
   }, [id, week, friday]);
 
   useEffect(() => {
@@ -94,10 +97,18 @@ export default function ChildAttendanceScreen() {
           const label = future ? { label: "Coming up", tone: "neutral" as const } : markLabel(byDay.get(day) ?? null, hasRegister);
           return (
             <View key={day} style={[styles.dayRow, { backgroundColor: palette.surface, borderColor: palette.line }]}>
-              <Text style={[styles.dayText, { color: palette.text }]}>
-                {formatDay(`${day}T12:00:00Z`)}
-                {day === today ? " (today)" : ""}
-              </Text>
+              <View style={styles.dayInfo}>
+                <Text style={[styles.dayText, { color: palette.text }]}>
+                  {formatDay(`${day}T12:00:00Z`)}
+                  {day === today ? " (today)" : ""}
+                </Text>
+                {times[day] ? (
+                  <Text style={[styles.times, { color: times[day].changed ? palette.warning : palette.muted }]}>
+                    {times[day].changed && !times[day].text.startsWith("School closed") ? "Changed: " : ""}
+                    {times[day].text}
+                  </Text>
+                ) : null}
+              </View>
               <Badge tone={label.tone}>{label.label}</Badge>
             </View>
           );
@@ -126,4 +137,6 @@ const styles = StyleSheet.create({
   thisWeek: { fontSize: 14, fontWeight: "600", textAlign: "center" },
   dayRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12 },
   dayText: { fontSize: 15, fontWeight: "500" },
+  dayInfo: { flex: 1, gap: 2, paddingRight: 8 },
+  times: { fontSize: 13 },
 });

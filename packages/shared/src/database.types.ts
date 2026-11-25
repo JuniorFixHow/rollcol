@@ -136,6 +136,120 @@ export type Database = {
         }
         Relationships: []
       }
+      school_day_times: {
+        Row: {
+          breaks: Json
+          class_id: string | null
+          closes_at: string
+          id: string
+          opens_at: string
+          school_id: string
+          updated_at: string
+          updated_by: string | null
+          weekday: number
+        }
+        Insert: {
+          breaks?: Json
+          class_id?: string | null
+          closes_at: string
+          id?: string
+          opens_at: string
+          school_id: string
+          updated_at?: string
+          updated_by?: string | null
+          weekday: number
+        }
+        Update: {
+          breaks?: Json
+          class_id?: string | null
+          closes_at?: string
+          id?: string
+          opens_at?: string
+          school_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          weekday?: number
+        }
+        Relationships: []
+      }
+      school_day_changes: {
+        Row: {
+          cancelled_at: string | null
+          class_id: string | null
+          closed: boolean
+          closes_at: string | null
+          created_at: string
+          created_by: string | null
+          day: string
+          id: string
+          note: string | null
+          opens_at: string | null
+          school_id: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          class_id?: string | null
+          closed?: boolean
+          closes_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          day: string
+          id?: string
+          note?: string | null
+          opens_at?: string | null
+          school_id: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          class_id?: string | null
+          closed?: boolean
+          closes_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          day?: string
+          id?: string
+          note?: string | null
+          opens_at?: string | null
+          school_id?: string
+        }
+        Relationships: []
+      }
+      guardian_phone_requests: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          guardian_id: string
+          id: string
+          new_phone: string
+          requested_by: string
+          school_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          guardian_id: string
+          id?: string
+          new_phone: string
+          requested_by: string
+          school_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          guardian_id?: string
+          id?: string
+          new_phone?: string
+          requested_by?: string
+          school_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       notification_settings: {
         Row: { user_id: string; kind: string; enabled: boolean; updated_at: string }
         Insert: { user_id: string; kind: string; enabled: boolean; updated_at?: string }
@@ -1946,6 +2060,67 @@ export type Database = {
           created_at: string
         }[]
       }
+      parent_report_absences: {
+        Args: { p_student_ids: string[]; p_from: string; p_to: string; p_reason: string; p_note?: string | null }
+        Returns: number
+      }
+      set_school_day: {
+        Args: { p_school_id: string; p_class_id: string | null; p_days: Json }
+        Returns: undefined
+      }
+      add_school_day_change: {
+        Args: {
+          p_school_id: string
+          p_class_ids: string[] | null
+          p_day: string
+          p_closed: boolean
+          p_opens: string | null
+          p_closes: string | null
+          p_note: string | null
+          p_notify: boolean
+        }
+        Returns: number
+      }
+      cancel_school_day_change: {
+        Args: { p_id: string }
+        Returns: undefined
+      }
+      parent_school_days: {
+        Args: { p_student_id: string; p_from: string; p_to: string }
+        Returns: {
+          day: string
+          opens_at: string | null
+          closes_at: string | null
+          breaks: Json
+          closed: boolean
+          note: string | null
+          changed: boolean
+        }[]
+      }
+      parent_request_phone_change: {
+        Args: { p_link_id: string; p_new_phone: string }
+        Returns: undefined
+      }
+      parent_cancel_phone_change: {
+        Args: { p_id: string }
+        Returns: undefined
+      }
+      school_phone_requests: {
+        Args: { p_school_id: string }
+        Returns: {
+          id: string
+          guardian_id: string
+          guardian_name: string
+          old_phone: string
+          new_phone: string
+          children: string[]
+          created_at: string
+        }[]
+      }
+      decide_phone_request: {
+        Args: { p_id: string; p_approve: boolean }
+        Returns: undefined
+      }
       approve_parent_link: {
         Args: { p_link_id: string }
         Returns: undefined
@@ -1991,7 +2166,7 @@ export type Database = {
       }
       parent_my_links: {
         Args: never
-        Returns: { id: string; school_name: string; status: string; children: string[]; created_at: string }[]
+        Returns: { id: string; school_id: string; school_name: string; status: string; children: string[]; created_at: string }[]
       }
       parent_status: {
         Args: never

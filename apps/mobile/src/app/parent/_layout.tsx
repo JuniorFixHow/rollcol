@@ -28,6 +28,7 @@ export default function ParentLayout() {
       <Stack.Screen name="notification-settings" options={{ title: "Notifications" }} />
       <Stack.Screen name="message/[id]" options={{ title: "Message" }} />
       <Stack.Screen name="pickups" options={{ title: "Pickup codes" }} />
+      <Stack.Screen name="number" options={{ title: "Change my number" }} />
       <Stack.Screen name="absences" options={{ title: "Absences" }} />
       <Stack.Screen name="pickup" options={{ title: "Make a pickup code" }} />
       <Stack.Screen name="absence" options={{ title: "Report an absence" }} />

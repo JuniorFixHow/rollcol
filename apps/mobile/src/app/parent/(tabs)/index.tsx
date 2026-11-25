@@ -1,4 +1,4 @@
-import { attendanceRate } from "@rollcol/shared";
+import { attendanceRate, schoolDayText } from "@rollcol/shared";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -7,6 +7,7 @@ import { SettingsGroup, SettingsRow } from "@/components/settings";
 import { usePalette } from "@/components/theme";
 import { Body, Button, Card, Loading, Message } from "@/components/ui";
 import { type ParentChild, markLabel } from "@/lib/parent";
+import { ghanaDate } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
 
 interface Status {
@@ -15,7 +16,7 @@ interface Status {
   unlinked: number;
 }
 
-function ChildCard({ child }: { child: ParentChild }) {
+function ChildCard({ child, todayTimes }: { child: ParentChild; todayTimes: string | null }) {
   const palette = usePalette();
   if (!child.student_id || !child.full_name) {
     return (
@@ -43,6 +44,7 @@ function ChildCard({ child }: { child: ParentChild }) {
             {child.class_name ? `${child.class_name} · ` : ""}
             {child.school_name}
           </Text>
+          {todayTimes ? <Text style={[styles.meta, { color: palette.text }]}>Today: {todayTimes}</Text> : null}
         </View>
         <View style={styles.today}>
           <Text style={[styles.todayLabel, { color: palette.muted }]}>Today</Text>
@@ -72,6 +74,7 @@ function ChildCard({ child }: { child: ParentChild }) {
 
 export default function ChildrenScreen() {
   const [children, setChildren] = useState<ParentChild[]>([]);
+  const [todayTimes, setTodayTimes] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<Status | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -88,6 +91,19 @@ export default function ChildrenScreen() {
     const first = statusResult.data[0];
     setStatus({ active: first?.active ?? 0, pending: first?.pending ?? 0, unlinked: first?.unlinked ?? 0 });
     setChildren(childrenResult.data);
+    const today = ghanaDate();
+    const entries = await Promise.all(
+      childrenResult.data.flatMap((c) =>
+        c.student_id
+          ? [
+              supabase
+                .rpc("parent_school_days", { p_student_id: c.student_id, p_from: today, p_to: today })
+                .then(({ data }) => [c.student_id ?? "", data?.[0] ? schoolDayText(data[0]) : ""] as const),
+            ]
+          : [],
+      ),
+    );
+    setTodayTimes(Object.fromEntries(entries.filter(([, text]) => text)));
   }, []);
 
   useFocusEffect(
@@ -133,7 +149,11 @@ export default function ChildrenScreen() {
         <View style={styles.group}>
           <SectionTitle>Your children</SectionTitle>
           {children.map((child) => (
-            <ChildCard key={child.student_id ?? `pending-${child.school_id}`} child={child} />
+            <ChildCard
+              key={child.student_id ?? `pending-${child.school_id}`}
+              child={child}
+              todayTimes={child.student_id ? (todayTimes[child.student_id] ?? null) : null}
+            />
           ))}
         </View>
       ) : null}
