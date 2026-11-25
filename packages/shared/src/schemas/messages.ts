@@ -96,10 +96,9 @@ export const SMS_DELIVERY_LABELS = {
   rejected: "Rejected by the network",
 } as const;
 
-/** "Messages between 9:00pm and 7:00am wait until 7:00am", or null when the school has no quiet hours. */
 /**
- * Only during quiet hours (Ghana time, which is UTC): says when the message
- * will go. Null when there are no quiet hours or they are not on now.
+ * Only during quiet hours (Ghana time, which is UTC): says when the SMS will
+ * go. Parents who use the app get it at once. Null when there are no quiet hours or they are not on now.
  */
 export function quietNowText(quiet: { on: boolean; start: string; end: string } | null, now: Date = new Date()): string | null {
   if (!quiet?.on) return null;
@@ -115,9 +114,10 @@ export function quietNowText(quiet: { on: boolean; start: string; end: string } 
   const h = Math.floor(end / 60);
   const m = end % 60;
   const clock = `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, "0")}${h >= 12 ? "pm" : "am"}`;
-  return `It is within your quiet hours, so it waits until ${clock}.`;
+  return `It is within your quiet hours, so the SMS waits until ${clock}. Parents who use the app get it at once.`;
 }
 
+/** "SMS between 9:00pm and 7:00am waits until 7:00am", or null when the school has no quiet hours. */
 export function quietHoursText(quiet: { on: boolean; start: string; end: string } | null): string | null {
   if (!quiet?.on) return null;
   const clock = (value: string) => {
@@ -125,7 +125,7 @@ export function quietHoursText(quiet: { on: boolean; start: string; end: string 
     const suffix = h >= 12 ? "pm" : "am";
     return `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, "0")}${suffix}`;
   };
-  return `Messages between ${clock(quiet.start)} and ${clock(quiet.end)} wait until ${clock(quiet.end)}.`;
+  return `SMS between ${clock(quiet.start)} and ${clock(quiet.end)} waits until ${clock(quiet.end)}. Parents who use the app get it at once.`;
 }
 
 /** Why a parent says their child will be absent. */

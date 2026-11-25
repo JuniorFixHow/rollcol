@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { usePalette } from "@/components/theme";
 import { registerStaffPush, useNotificationTaps } from "@/lib/push";
 
-/** The parent part of the app: children, the school's messages, notifications. */
+/** The parent part of the app: tabs for children, pickups and absences; messages, notifications and the account open from the header. */
 export default function ParentLayout() {
   const palette = usePalette();
 
@@ -27,9 +27,10 @@ export default function ParentLayout() {
       <Stack.Screen name="child/[id]" options={{ title: "Attendance" }} />
       <Stack.Screen name="notification-settings" options={{ title: "Notifications" }} />
       <Stack.Screen name="message/[id]" options={{ title: "Message" }} />
-      <Stack.Screen name="pickups" options={{ title: "Pickup codes" }} />
+      <Stack.Screen name="messages" options={{ title: "Messages" }} />
+      <Stack.Screen name="notifications" options={{ title: "Notifications" }} />
+      <Stack.Screen name="account" options={{ title: "Account" }} />
       <Stack.Screen name="number" options={{ title: "Change my number" }} />
-      <Stack.Screen name="absences" options={{ title: "Absences" }} />
       <Stack.Screen name="pickup" options={{ title: "Make a pickup code" }} />
       <Stack.Screen name="absence" options={{ title: "Report an absence" }} />
     </Stack>

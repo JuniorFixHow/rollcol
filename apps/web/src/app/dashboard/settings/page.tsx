@@ -276,7 +276,7 @@ export default async function SettingsPage() {
                 <CheckboxField
                   name="quietHours"
                   label="Hold SMS during quiet hours"
-                  description="Messages that fall in these hours wait and go out when they end. Turn this off if you have evening classes and want alerts at any time."
+                  description="SMS that falls in these hours waits and goes out when they end. Parents who use the RollCol app get messages and alerts at once. Turn this off if you have evening classes and want SMS alerts at any time."
                   defaultChecked={settings?.sms_quiet_hours ?? true}
                 />
                 <div className="mt-3 grid items-start gap-4 sm:grid-cols-2">
@@ -289,9 +289,9 @@ export default async function SettingsPage() {
                   />
                   <TextField
                     name="quietEnd"
-                    label="Quiet hours end (messages go out)"
+                    label="Quiet hours end (SMS goes out)"
                     type="time"
-                    hint="For example, set 21:00 to 06:30 so the night's messages arrive at 6:30am."
+                    hint="For example, set 21:00 to 06:30 so the night's SMS arrives at 6:30am."
                     defaultValue={shortTime(settings?.sms_quiet_end) || "07:00"}
                   />
                   </DependsOn>

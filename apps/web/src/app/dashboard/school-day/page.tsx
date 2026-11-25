@@ -2,7 +2,7 @@ import { clockText, parseBreaks } from "@rollcol/shared";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ActionForm, CheckboxField, FormMessage, InlineAction, SelectField, SubmitButton, TextField } from "@/components/form";
+import { ActionForm, CheckboxField, DependsOn, FormMessage, InlineAction, SelectField, SubmitButton, TextField } from "@/components/form";
 import { Badge, Card, EmptyState, PageHeader } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth";
 import { ghanaToday } from "@/lib/parent";
@@ -93,27 +93,31 @@ export default async function SchoolDayPage({ searchParams }: { searchParams: Pr
               ]}
               defaultValue="times"
             />
-            <TextField name="opens" label="Arrival (if different)" type="time" />
-            <TextField name="closes" label="Closing (if different)" type="time" />
+            <DependsOn field="kind" equals="times" initially>
+              <TextField name="opens" label="Arrival (if different)" type="time" />
+              <TextField name="closes" label="Closing (if different)" type="time" />
+            </DependsOn>
             <SelectField
               name="who"
               label="For"
               options={[
                 { value: "all", label: "The whole school" },
-                { value: "some", label: "The classes ticked below" },
+                { value: "some", label: "Some classes" },
               ]}
               defaultValue="all"
             />
             <TextField name="note" label="Note for parents (optional)" hint="For example: Staff meeting." autoComplete="off" />
             {classList.length > 0 ? (
-              <fieldset className="sm:col-span-2">
-                <legend className="mb-2 text-sm font-medium">Classes</legend>
-                <div className="flex flex-wrap gap-x-6 gap-y-2">
-                  {classList.map((c) => (
-                    <CheckboxField key={c.id} name={`class:${c.id}`} label={c.name} />
-                  ))}
-                </div>
-              </fieldset>
+              <DependsOn field="who" equals="some" initially={false}>
+                <fieldset className="sm:col-span-2">
+                  <legend className="mb-2 text-sm font-medium">Classes</legend>
+                  <div className="flex flex-wrap gap-x-6 gap-y-2">
+                    {classList.map((c) => (
+                      <CheckboxField key={c.id} name={`class:${c.id}`} label={c.name} />
+                    ))}
+                  </div>
+                </fieldset>
+              </DependsOn>
             ) : null}
             <div className="sm:col-span-2">
               <CheckboxField

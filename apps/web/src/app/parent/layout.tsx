@@ -24,7 +24,7 @@ export default function ParentLayout({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur">
         <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3 sm:px-6">
           <Brand />
-          <Suspense fallback={<div className="h-9" />}>
+          <Suspense fallback={<div className="h-9 w-28" />}>
             <Header />
           </Suspense>
         </div>

@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Tabs, useFocusEffect } from "expo-router";
+import { Tabs, router, useFocusEffect } from "expo-router";
 import * as Notifications from "expo-notifications";
-import { useCallback, useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { type ComponentProps, useCallback, useEffect, useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { usePalette } from "@/components/theme";
 import { Logo } from "@/components/ui";
 import { supabase } from "@/lib/supabase";
@@ -50,10 +50,42 @@ function tint(color: unknown): string {
   return typeof color === "string" ? color : "#5b6676";
 }
 
+type IconName = ComponentProps<typeof Ionicons>["name"];
+
+function HeaderIcon({ icon, label, count, href }: { icon: IconName; label: string; count: number; href: "/parent/messages" | "/parent/notifications" | "/parent/account" }) {
+  const palette = usePalette();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={count > 0 ? `${label}, ${count} unread` : label}
+      hitSlop={6}
+      onPress={() => router.push(href)}
+      style={({ pressed }) => [styles.icon, pressed ? { opacity: 0.6 } : null]}
+    >
+      <Ionicons name={icon} size={24} color={palette.text} />
+      {count > 0 ? (
+        <View style={[styles.badge, { backgroundColor: palette.danger, borderColor: palette.surface }]}>
+          <Text style={styles.badgeText}>{count > 99 ? "99+" : count}</Text>
+        </View>
+      ) : null}
+    </Pressable>
+  );
+}
+
+/** Messages, notifications and the account, at the top right of every tab. */
+function HeaderIcons({ messages, notifications }: { messages: number; notifications: number }) {
+  return (
+    <View style={styles.icons}>
+      <HeaderIcon icon="chatbubbles-outline" label="Messages" count={messages} href="/parent/messages" />
+      <HeaderIcon icon="notifications-outline" label="Notifications" count={notifications} href="/parent/notifications" />
+      <HeaderIcon icon="person-circle-outline" label="Account" count={0} href="/parent/account" />
+    </View>
+  );
+}
+
 export default function ParentTabsLayout() {
   const palette = usePalette();
   const unread = useUnreadCounts();
-  const badge = (n: number) => (n > 0 ? (n > 99 ? "99+" : n) : undefined);
 
   return (
     <Tabs
@@ -61,6 +93,7 @@ export default function ParentTabsLayout() {
         headerStyle: { backgroundColor: palette.surface },
         headerTintColor: palette.text,
         headerShadowVisible: false,
+        headerRight: () => <HeaderIcons messages={unread.messages} notifications={unread.notifications} />,
         sceneStyle: { backgroundColor: palette.background },
         tabBarStyle: { backgroundColor: palette.surface, borderTopColor: palette.line },
         tabBarActiveTintColor: palette.accent,
@@ -77,33 +110,19 @@ export default function ParentTabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="messages"
+        name="pickups"
         options={{
-          title: "Messages",
-          tabBarBadge: badge(unread.messages),
-          tabBarBadgeStyle: { backgroundColor: palette.danger, color: "#ffffff" },
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "chatbubbles" : "chatbubbles-outline"} size={24} color={tint(color)} />
-          ),
+          title: "Pickups",
+          headerTitle: "Pickup codes",
+          tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "key" : "key-outline"} size={24} color={tint(color)} />,
         }}
       />
       <Tabs.Screen
-        name="notifications"
+        name="absences"
         options={{
-          title: "Notifications",
-          tabBarBadge: badge(unread.notifications),
-          tabBarBadgeStyle: { backgroundColor: palette.danger, color: "#ffffff" },
+          title: "Absences",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "notifications" : "notifications-outline"} size={24} color={tint(color)} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="account"
-        options={{
-          title: "Account",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "person-circle" : "person-circle-outline"} size={24} color={tint(color)} />
+            <Ionicons name={focused ? "calendar" : "calendar-outline"} size={24} color={tint(color)} />
           ),
         }}
       />
@@ -114,4 +133,19 @@ export default function ParentTabsLayout() {
 const styles = StyleSheet.create({
   brand: { flexDirection: "row", alignItems: "center", gap: 8 },
   brandText: { fontSize: 17, fontWeight: "700" },
+  icons: { flexDirection: "row", alignItems: "center", gap: 14, paddingRight: 16 },
+  icon: { padding: 2 },
+  badge: {
+    position: "absolute",
+    top: -4,
+    right: -8,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    paddingHorizontal: 3,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badgeText: { color: "#ffffff", fontSize: 10, fontWeight: "700" },
 });

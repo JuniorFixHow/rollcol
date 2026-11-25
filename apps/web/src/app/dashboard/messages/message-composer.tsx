@@ -107,14 +107,14 @@ export function MessageComposer({
           confirmed.current = false;
           return;
         }
-        // Ask only when it matters: it costs credits, or quiet hours delay it now.
+        // Ask only when it costs credits. Quiet hours hold the SMS only: the app gets it at once.
+        if (credits === 0) return;
         const quietNote = quietNowText(quiet);
-        if (credits === 0 && !quietNote) return;
         event.preventDefault();
         const form = event.currentTarget;
         const who = reach === 1 ? "1 guardian" : `${reach} guardians`;
         const parts = [
-          credits > 0 ? `It uses ${credits} SMS ${credits === 1 ? "credit" : "credits"}.` : "Everyone gets it in the RollCol app, so it uses no credits.",
+          `It uses ${credits} SMS ${credits === 1 ? "credit" : "credits"}.`,
           quietNote,
         ];
         void ask({
